@@ -3,8 +3,6 @@ package com.pocketremote.freerdp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,6 +14,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.freerdp.freerdpcore.application.GlobalApp
 import com.pocketremote.freerdp.data.HostProfile
 import com.pocketremote.freerdp.data.HostRepository
 import com.pocketremote.freerdp.rdp.FreeRdpLauncher
@@ -44,29 +43,29 @@ fun PocketRemoteApp() {
     val navController: NavHostController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    // 세션이 끝나고 돌아왔을 때 SSH 터널/임시 북마크를 정리하기 위해 기억해둔다
-    var pending by remember {
-        mutableStateOf<Triple<HostProfile, SshTunnelManager, Long>?>(null)
-    }
-    val sessionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        val p = pending ?: return@rememberLauncherForActivityResult
-        pending = null
-        scope.launch {
-            FreeRdpLauncher.teardown(context, p.first, p.second, p.third)
-        }
-    }
-
+    // SessionActivity는 documentLaunchMode="always"라 startActivityForResult로 결과를
+    // 돌려받을 수 없다 - 대신 GlobalApp의 세션 이벤트 리스너로 종료 시점을 감지한다.
     fun connect(profile: HostProfile) {
         val sshManager = SshTunnelManager()
         scope.launch {
             val result = FreeRdpLauncher.prepareSessionIntent(context, profile, sshManager)
-            result.onSuccess { prepared ->
-                pending = Triple(profile, sshManager, prepared.bookmarkId)
-                sessionLauncher.launch(prepared.intent)
+            result.onSuccess { (intent, instance) ->
+                fun cleanup() {
+                    GlobalApp.unregisterSessionListener(instance)
+                    scope.launch { FreeRdpLauncher.teardown(profile, sshManager) }
+                }
+                GlobalApp.registerSessionListener(instance, object : GlobalApp.SessionEventListener {
+                    override fun onConnectionSuccess() {}
+                    override fun onConnectionFailure() = cleanup()
+                    override fun onDisconnected() = cleanup()
+                })
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    cleanup()
+                }
             }.onFailure {
-                // 연결 실패 시 열려 있을 수 있는 SSH 세션 정리
+                // SSH 연결/터널 자체가 실패한 경우 (아직 세션은 만들어지지 않았음)
                 scope.launch { sshManager.disconnect(profile) }
             }
         }

@@ -474,7 +474,9 @@ public class SessionActivity extends AppCompatActivity
 		}
 		else if (bundle.containsKey(PARAM_INSTANCE))
 		{
-			int inst = bundle.getInt(PARAM_INSTANCE);
+			// Instance handles are native pointers (LibFreeRDP.newInstance/freerdp_new),
+			// which don't fit in 32 bits on a 64-bit process - must read as long, not int.
+			long inst = bundle.getLong(PARAM_INSTANCE);
 			session = GlobalApp.getSession(inst);
 			bitmap = session.getSurface().getBitmap();
 			bindSession();
