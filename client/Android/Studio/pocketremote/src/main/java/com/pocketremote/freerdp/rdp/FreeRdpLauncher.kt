@@ -46,6 +46,11 @@ object FreeRdpLauncher {
             username = profile.rdpUsername
             password = profile.rdpPassword
             domain = ""
+            // FITSCREEN (not the default AUTOMATIC) is what gates SessionActivity's
+            // onConfigurationChanged -> sendMonitorLayout dynamic resize - without it,
+            // rotating the phone mid-session doesn't ask the RDP server to match the new
+            // orientation/aspect ratio, it just stays at the size from initial connect.
+            screenSettings.setResolution(BookmarkBase.ScreenSettings.FITSCREEN)
         }
 
         val bookmarkId = withContext(Dispatchers.IO) {
