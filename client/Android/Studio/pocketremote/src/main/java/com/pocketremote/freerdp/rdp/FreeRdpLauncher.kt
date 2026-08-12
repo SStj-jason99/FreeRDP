@@ -2,30 +2,40 @@ package com.pocketremote.freerdp.rdp
 
 import android.content.Context
 import android.content.Intent
-import com.freerdp.freerdpcore.application.GlobalApp
+import com.freerdp.freerdpcore.data.AppDatabase
 import com.freerdp.freerdpcore.domain.BookmarkBase
+import com.freerdp.freerdpcore.domain.ConnectionReference
 import com.freerdp.freerdpcore.presentation.SessionActivity
+import com.freerdp.freerdpcore.services.ManualBookmarkGateway
 import com.pocketremote.freerdp.data.HostProfile
 import com.pocketremote.freerdp.ssh.SshTunnelManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * SSH 터널을 연 뒤(127.0.0.1:<localPort> -> host의 RDP), FreeRDP 엔진(freeRDPCore)이 실제
  * 화면 렌더링/키보드/터치를 담당하는 SessionActivity를 그 터널을 향해 띄워준다.
  *
- * 세션은 [GlobalApp.createSession]으로 우리가 직접(메모리 상에서만) 만들어서 그 instance
- * 핸들을 SessionActivity에 넘긴다 - freeRDPCore의 북마크 DB(SQLCipher)에 굳이 쓰고 지울
- * 필요가 없고, 세션 종료 시점도 GlobalApp의 [GlobalApp.SessionEventListener]로 정확히 알 수
- * 있다(SessionActivity는 documentLaunchMode="always"라 startActivityForResult로는 결과를
- * 돌려받을 수 없다).
+ * PARAM_INSTANCE로 우리가 직접 만든 세션을 넘기는 방식은 시도해봤지만 실제 기기 테스트에서
+ * 두 가지 업스트림 버그를 드러냈다: session.getSurface()가 세션 생성 직후엔 null이라 NPE가
+ * 나고(SessionActivity.java, bindSession()은 이미 null 체크를 하는데 PARAM_INSTANCE 분기는
+ * 안 함 - 고쳐서 커밋함), 무엇보다 그 경로는 "이미 연결 중인 세션을 다시 화면에 붙이는" 용도라
+ * 실제 연결(connectWithTitle -> ConnectThread -> LibFreeRDP.connect)을 시작해주지 않는다.
+ * 그래서 실제로 검증된 경로인 "북마크 참조로 실행"(PARAM_CONNECTION_REFERENCE)을 쓴다 -
+ * freeRDPCore 자체 SQLCipher 북마크 DB에 이번 접속 1회용 북마크를 넣고 그 id로 실행한 뒤,
+ * 세션이 끝나면 지운다.
  */
 object FreeRdpLauncher {
 
-    /** SSH 연결 + 포트포워딩 + FreeRDP 세션 생성까지 마치고 SessionActivity로 보낼 Intent를 만든다 */
+    /** [prepareSessionIntent]의 결과: 띄울 Intent와, 나중에 [teardown]에서 지울 북마크 id */
+    data class PreparedSession(val intent: Intent, val bookmarkId: Long)
+
+    /** SSH 연결 + 포트포워딩 + 임시 북마크 생성까지 마치고 SessionActivity로 보낼 Intent를 만든다 */
     suspend fun prepareSessionIntent(
         context: Context,
         profile: HostProfile,
         sshManager: SshTunnelManager,
-    ): Result<Pair<Intent, Long>> = runCatching {
+    ): Result<PreparedSession> = runCatching {
         sshManager.connect(profile).getOrThrow()
         val localPort = sshManager.openLocalPortForward(profile.rdpTargetHost, profile.rdpPort)
 
@@ -38,15 +48,30 @@ object FreeRdpLauncher {
             domain = ""
         }
 
-        val session = GlobalApp.createSession(bookmark, context.applicationContext)
-        val intent = Intent(context, SessionActivity::class.java).apply {
-            putExtra(SessionActivity.PARAM_INSTANCE, session.instance)
+        val bookmarkId = withContext(Dispatchers.IO) {
+            val dao = AppDatabase.getInstance(context.applicationContext).bookmarkDao()
+            ManualBookmarkGateway(dao).insert(bookmark)
         }
-        intent to session.instance
+
+        val intent = Intent(context, SessionActivity::class.java).apply {
+            putExtra(
+                SessionActivity.PARAM_CONNECTION_REFERENCE,
+                ConnectionReference.getBookmarkReference(bookmarkId)
+            )
+        }
+        PreparedSession(intent, bookmarkId)
     }
 
-    /** 세션이 끝난 뒤(성공/실패 무관) SSH 터널을 닫는다 */
-    suspend fun teardown(profile: HostProfile, sshManager: SshTunnelManager) {
+    /** 세션 화면에서 돌아온 뒤 SSH 터널을 닫고, 1회용 북마크도 지운다 */
+    suspend fun teardown(context: Context, profile: HostProfile, sshManager: SshTunnelManager, bookmarkId: Long?) {
         sshManager.disconnect(profile)
+        if (bookmarkId != null) {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val dao = AppDatabase.getInstance(context.applicationContext).bookmarkDao()
+                    ManualBookmarkGateway(dao).delete(bookmarkId)
+                }
+            }
+        }
     }
 }

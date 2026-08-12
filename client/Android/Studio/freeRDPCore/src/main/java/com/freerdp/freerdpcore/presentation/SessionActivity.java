@@ -478,7 +478,9 @@ public class SessionActivity extends AppCompatActivity
 			// which don't fit in 32 bits on a 64-bit process - must read as long, not int.
 			long inst = bundle.getLong(PARAM_INSTANCE);
 			session = GlobalApp.getSession(inst);
-			bitmap = session.getSurface().getBitmap();
+			// A freshly created session (never shown before) has no surface yet - same
+			// null-check bindSession() already applies a few lines below for this exact value.
+			bitmap = session.getSurface() != null ? session.getSurface().getBitmap() : null;
 			bindSession();
 		}
 		else if (bundle.containsKey(PARAM_CONNECTION_REFERENCE))

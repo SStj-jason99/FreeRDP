@@ -9,12 +9,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.freerdp.freerdpcore.application.GlobalApp
 import com.pocketremote.freerdp.data.HostProfile
 import com.pocketremote.freerdp.data.HostRepository
 import com.pocketremote.freerdp.rdp.FreeRdpLauncher
@@ -45,29 +47,41 @@ fun PocketRemoteApp() {
     val navController: NavHostController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    // SessionActivity는 documentLaunchMode="always"라 startActivityForResult로 결과를
-    // 돌려받을 수 없다 - 대신 GlobalApp의 세션 이벤트 리스너로 종료 시점을 감지한다.
+    // 연결 중이거나 접속 화면이 떠 있는 동안 정리해야 할 SSH 터널/1회용 북마크.
+    // SessionActivity는 documentLaunchMode="always"라 startActivityForResult로는 결과를
+    // 못 돌려받으므로, "우리 화면이 다시 보인다(=RDP 화면에서 돌아왔다)"는 라이프사이클
+    // 신호로 정리 시점을 감지한다.
+    var pending by remember {
+        mutableStateOf<Triple<HostProfile, SshTunnelManager, Long?>?>(null)
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                pending?.let { (profile, sshManager, bookmarkId) ->
+                    pending = null
+                    scope.launch { FreeRdpLauncher.teardown(context, profile, sshManager, bookmarkId) }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     fun connect(profile: HostProfile) {
         val sshManager = SshTunnelManager()
         scope.launch {
             val result = FreeRdpLauncher.prepareSessionIntent(context, profile, sshManager)
-            result.onSuccess { (intent, instance) ->
-                fun cleanup() {
-                    GlobalApp.unregisterSessionListener(instance)
-                    scope.launch { FreeRdpLauncher.teardown(profile, sshManager) }
-                }
-                GlobalApp.registerSessionListener(instance, object : GlobalApp.SessionEventListener {
-                    override fun onConnectionSuccess() {}
-                    override fun onConnectionFailure() = cleanup()
-                    override fun onDisconnected() = cleanup()
-                })
+            result.onSuccess { prepared ->
+                pending = Triple(profile, sshManager, prepared.bookmarkId)
                 try {
-                    context.startActivity(intent)
+                    context.startActivity(prepared.intent)
                 } catch (e: Exception) {
-                    cleanup()
+                    pending = null
+                    scope.launch { FreeRdpLauncher.teardown(context, profile, sshManager, prepared.bookmarkId) }
                 }
             }.onFailure {
-                // SSH 연결/터널 자체가 실패한 경우 (아직 세션은 만들어지지 않았음)
+                // SSH 연결/터널 자체가 실패한 경우 (세션·북마크는 아직 안 만들어졌음)
                 scope.launch { sshManager.disconnect(profile) }
             }
         }
