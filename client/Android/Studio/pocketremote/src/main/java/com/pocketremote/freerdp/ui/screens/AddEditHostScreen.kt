@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.pocketremote.freerdp.data.DefaultCredentials
 import com.pocketremote.freerdp.data.HostProfile
@@ -72,7 +73,11 @@ fun AddEditHostScreen(
             OutlinedTextField(displayName, { displayName = it }, label = { Text("별명 (예: 3호기)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(host, { host = it }, label = { Text("SSH 접속 주소 (IP)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(sshUsername, { sshUsername = it }, label = { Text("SSH 계정") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(sshPassword, { sshPassword = it }, label = { Text("SSH 비밀번호") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                sshPassword, { sshPassword = it }, label = { Text("SSH 비밀번호") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             HorizontalDivider()
 
@@ -88,7 +93,11 @@ fun AddEditHostScreen(
                 )
             }
             OutlinedTextField(rdpUsername, { rdpUsername = it }, label = { Text("RDP 계정") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(rdpPassword, { rdpPassword = it }, label = { Text("RDP 비밀번호") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                rdpPassword, { rdpPassword = it }, label = { Text("RDP 비밀번호") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text("접속 시 배경화면 검게(속도 최적화)", modifier = Modifier.weight(1f))

@@ -20,6 +20,7 @@ import com.pocketremote.freerdp.data.HostRepository
 import com.pocketremote.freerdp.rdp.FreeRdpLauncher
 import com.pocketremote.freerdp.ssh.SshTunnelManager
 import com.pocketremote.freerdp.ui.screens.AddEditHostScreen
+import com.pocketremote.freerdp.ui.screens.BulkAddScreen
 import com.pocketremote.freerdp.ui.screens.HostListScreen
 import kotlinx.coroutines.launch
 
@@ -78,9 +79,13 @@ fun PocketRemoteApp() {
                 hosts = hosts,
                 onConnect = ::connect,
                 onAdd = { navController.navigate("edit/new") },
+                onBulkAdd = { navController.navigate("bulk") },
                 onEdit = { navController.navigate("edit/${it.id}") },
                 onDelete = { repository.delete(it.id) },
             )
+        }
+        composable("bulk") {
+            BulkAddScreen(onDone = { navController.popBackStack() })
         }
         composable("edit/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,11 +27,29 @@ fun HostListScreen(
     hosts: List<HostProfile>,
     onConnect: (HostProfile) -> Unit,
     onAdd: () -> Unit,
+    onBulkAdd: () -> Unit,
     onEdit: (HostProfile) -> Unit,
     onDelete: (HostProfile) -> Unit,
 ) {
+    var topMenuExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Iris Remote") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Iris Remote") },
+                actions = {
+                    IconButton(onClick = { topMenuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "더보기")
+                    }
+                    DropdownMenu(expanded = topMenuExpanded, onDismissRequest = { topMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("여러 대 한번에 등록") },
+                            onClick = { topMenuExpanded = false; onBulkAdd() },
+                        )
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAdd) { Icon(Icons.Default.Add, contentDescription = "추가") }
         },
