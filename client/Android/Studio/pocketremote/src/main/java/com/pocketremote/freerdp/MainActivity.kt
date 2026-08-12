@@ -22,14 +22,15 @@ import com.pocketremote.freerdp.ssh.SshTunnelManager
 import com.pocketremote.freerdp.ui.screens.AddEditHostScreen
 import com.pocketremote.freerdp.ui.screens.BulkAddScreen
 import com.pocketremote.freerdp.ui.screens.HostListScreen
+import com.pocketremote.freerdp.ui.theme.PocketRemoteTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            PocketRemoteTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     PocketRemoteApp()
                 }
             }

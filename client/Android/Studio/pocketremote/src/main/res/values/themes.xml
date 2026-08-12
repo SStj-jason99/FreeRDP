@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose가 그리기 전까지 잠깐 보이는 시스템 윈도우 배경 - 앱의 다크 테마 배경색과
+         맞춰서 하얗게 번쩍이는 것을 막는다. -->
+    <style name="Theme.PocketRemote" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121218</item>
+        <item name="android:statusBarColor">#121218</item>
+        <item name="android:navigationBarColor">#121218</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

@@ -40,9 +40,14 @@ DWORD TlsAlloc(void)
 
 	if (pthread_key_create(&key, nullptr) != 0)
 		return TLS_OUT_OF_INDEXES;
-	if (key > UINT32_MAX)
+	/* pthread_key_t is a signed int on some libc (e.g. Bionic); WINPR_ASSERTING_INT_CAST
+	 * aborts the process if casting to DWORD (unsigned) would change sign/value, which we've
+	 * observed pthread_key_create() actually returning on some Android versions. Treat that
+	 * the same as "out of indexes" instead of crashing - matches the existing overflow check
+	 * below in spirit. */
+	if ((key < 0) || ((uintmax_t)key > UINT32_MAX))
 		return TLS_OUT_OF_INDEXES;
-	return WINPR_ASSERTING_INT_CAST(DWORD, key);
+	return (DWORD)key;
 }
 
 LPVOID TlsGetValue(DWORD dwTlsIndex)

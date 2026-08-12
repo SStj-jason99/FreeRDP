@@ -1,25 +1,29 @@
 package com.pocketremote.freerdp.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pocketremote.freerdp.data.HostProfile
 import com.pocketremote.freerdp.ssh.HostConnectivityChecker
-import kotlinx.coroutines.launch
+import com.pocketremote.freerdp.ui.theme.IrisError
+import com.pocketremote.freerdp.ui.theme.IrisPrimary
+import com.pocketremote.freerdp.ui.theme.IrisSuccess
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +40,8 @@ fun HostListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Iris Remote") },
+                title = { Text("Iris Remote", fontWeight = FontWeight.SemiBold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 actions = {
                     IconButton(onClick = { topMenuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "더보기")
@@ -56,54 +61,88 @@ fun HostListScreen(
     ) { padding ->
         if (hosts.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("등록된 호기가 없습니다. + 버튼으로 추가하세요.")
+                Text(
+                    "등록된 호기가 없습니다. + 버튼으로 추가하세요.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             return@Scaffold
         }
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             items(hosts, key = { it.id }) { host ->
-                HostRow(host = host, onConnect = { onConnect(host) }, onEdit = { onEdit(host) }, onDelete = { onDelete(host) })
-                HorizontalDivider()
+                HostCard(host = host, onConnect = { onConnect(host) }, onEdit = { onEdit(host) }, onDelete = { onDelete(host) })
             }
         }
     }
 }
 
 @Composable
-private fun HostRow(host: HostProfile, onConnect: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+private fun HostCard(host: HostProfile, onConnect: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
     var reachable by remember(host.id) { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(host.id) {
         reachable = HostConnectivityChecker.isReachable(host.host, host.sshPort)
     }
 
-    ListItem(
-        headlineContent = { Text(host.displayName) },
-        supportingContent = {
-            Text(if (host.rdpTargetHost == "127.0.0.1") host.host else "${host.host} → ${host.rdpTargetHost}")
-        },
-        leadingContent = {
-            val color = when (reachable) {
-                true -> MaterialTheme.colorScheme.primary
-                false -> MaterialTheme.colorScheme.error
-                null -> MaterialTheme.colorScheme.outline
+    val statusColor = when (reachable) {
+        true -> IrisSuccess
+        false -> IrisError
+        null -> MaterialTheme.colorScheme.outline
+    }
+
+    Card(
+        onClick = onConnect,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(IrisPrimary.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.Laptop, contentDescription = null, tint = IrisPrimary)
+                }
+                Box(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(statusColor))
+                }
             }
-            Box(
-                Modifier
-                    .size(12.dp)
-                    .background(color, shape = CircleShape)
-            )
-        },
-        trailingContent = {
-            Row {
-                IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = "수정") }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "삭제") }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(host.displayName, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    if (host.rdpTargetHost == "127.0.0.1") host.host else "${host.host} → ${host.rdpTargetHost}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onConnect)
-    )
+
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "수정", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "삭제", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
 }

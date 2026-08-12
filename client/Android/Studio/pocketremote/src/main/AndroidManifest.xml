@@ -9,7 +9,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.Main"
+        android:theme="@style/Theme.PocketRemote"
         tools:replace="android:theme">
 
         <activity
