@@ -174,8 +174,14 @@ public class TouchPointerView extends FrameLayout
 
 	private void setClusterTranslation(float tx, float ty)
 	{
-		float maxX = getWidth() - cluster.getWidth();
-		float maxY = getHeight() - cluster.getHeight();
+		// The click hotspot is the cluster's top-left corner (see hotspot()), so it must be
+		// able to reach every pixel from 0 to the overlay's edge, not just up to
+		// (edge - cluster size). Clamping to the full width/height here means the puck's
+		// auxiliary buttons can slide partly off-screen when the pointer is parked in a
+		// corner, but the cursor itself can still be placed on -- and click -- any pixel,
+		// including the far right/bottom edge.
+		float maxX = getWidth();
+		float maxY = getHeight();
 		if (tx < 0)
 			tx = 0;
 		if (ty < 0)

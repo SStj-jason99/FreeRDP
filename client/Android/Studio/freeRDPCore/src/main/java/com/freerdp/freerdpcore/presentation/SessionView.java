@@ -15,6 +15,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
@@ -68,6 +69,14 @@ public class SessionView extends View
 	private int cursorHotX = 0;
 	private int cursorHotY = 0;
 
+	// fading dot shown where a finger tap/long-press landed (direct-touch mode, no touch
+	// pointer / no real cursor visible) so the user can see what they actually hit
+	private static final long TOUCH_INDICATOR_DURATION_MS = 350;
+	private Paint touchIndicatorPaint;
+	private float touchIndicatorMaxRadius;
+	private float touchIndicatorX, touchIndicatorY;
+	private long touchIndicatorStartTime = -1;
+
 	// private static final String TAG = "FreeRDP.SessionView";
 	private DoubleGestureDetector doubleGestureDetector;
 	public SessionView(Context context)
@@ -103,6 +112,22 @@ public class SessionView extends View
 		scaleMatrix = new Matrix();
 		invScaleMatrix = new Matrix();
 		invalidRegionF = new RectF();
+
+		touchIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+		touchIndicatorPaint.setColor(Color.WHITE);
+		touchIndicatorPaint.setStyle(Paint.Style.FILL);
+		touchIndicatorMaxRadius = 18f * getResources().getDisplayMetrics().density;
+	}
+
+	// Shows a small fading dot at (x, y), in this view's own (unscaled) coordinate space --
+	// i.e. raw MotionEvent coordinates, not content/bitmap coordinates. Used to give feedback
+	// on direct finger touches, where there is no visible cursor to show what got hit.
+	public void showTouchIndicator(float x, float y)
+	{
+		touchIndicatorX = x;
+		touchIndicatorY = y;
+		touchIndicatorStartTime = System.currentTimeMillis();
+		postInvalidateOnAnimation();
 	}
 
 	/* External Mouse Hover */
@@ -166,6 +191,13 @@ public class SessionView extends View
 	public float getZoom()
 	{
 		return scaleFactor;
+	}
+
+	// Native (unscaled) remote-desktop bitmap currently on screen, or null before the first
+	// frame arrives. Used by MagnifierView to crop a zoomed preview around the cursor.
+	public Bitmap getContentBitmap()
+	{
+		return surface != null ? surface.getBitmap() : null;
 	}
 
 	public void setRailMode(boolean rail)
@@ -273,6 +305,22 @@ public class SessionView extends View
 			surface.draw(canvas);
 		}
 		canvas.restore();
+
+		if (touchIndicatorStartTime >= 0)
+		{
+			long elapsed = System.currentTimeMillis() - touchIndicatorStartTime;
+			if (elapsed < TOUCH_INDICATOR_DURATION_MS)
+			{
+				float t = elapsed / (float)TOUCH_INDICATOR_DURATION_MS;
+				touchIndicatorPaint.setAlpha((int)(180 * (1f - t)));
+				canvas.drawCircle(touchIndicatorX, touchIndicatorY,
+				                  touchIndicatorMaxRadius * (0.5f + 0.5f * t),
+				                  touchIndicatorPaint);
+				postInvalidateOnAnimation();
+			}
+			else
+				touchIndicatorStartTime = -1;
+		}
 	}
 
 	// perform mapping on the touch event's coordinates according to the current scaling
@@ -393,6 +441,14 @@ public class SessionView extends View
 		void onSessionViewScroll(boolean down);
 
 		void onSessionViewHScroll(boolean right);
+
+		// Fired while dragging the cursor / selecting text with a finger (long-press-drag), so
+		// a magnifier preview can be shown near the touch point. rawScreenX/Y are absolute
+		// screen coordinates (MotionEvent.getRawX/Y); contentX/Y are the matching position in
+		// the remote-desktop bitmap.
+		void onSessionViewDragPreview(int rawScreenX, int rawScreenY, int contentX, int contentY);
+
+		void onSessionViewDragPreviewEnd();
 	}
 
 	public void setRemoteCursor(int[] pixels, int width, int height, int hotX, int hotY)
@@ -449,6 +505,10 @@ public class SessionView extends View
 			sessionViewListener.onSessionViewBeginTouch();
 			sessionViewListener.onSessionViewLeftTouch((int)mappedEvent.getX(),
 			                                           (int)mappedEvent.getY(), true);
+			showTouchIndicator(e.getX(), e.getY());
+			sessionViewListener.onSessionViewDragPreview((int)e.getRawX(), (int)e.getRawY(),
+			                                             (int)mappedEvent.getX(),
+			                                             (int)mappedEvent.getY());
 			longPressInProgress = true;
 		}
 
@@ -459,6 +519,7 @@ public class SessionView extends View
 			                                           (int)mappedEvent.getY(), false);
 			longPressInProgress = false;
 			sessionViewListener.onSessionViewEndTouch();
+			sessionViewListener.onSessionViewDragPreviewEnd();
 		}
 
 		public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY)
@@ -468,6 +529,9 @@ public class SessionView extends View
 				MotionEvent mappedEvent = mapTouchEvent(e2);
 				sessionViewListener.onSessionViewMove((int)mappedEvent.getX(),
 				                                      (int)mappedEvent.getY());
+				sessionViewListener.onSessionViewDragPreview((int)e2.getRawX(), (int)e2.getRawY(),
+				                                             (int)mappedEvent.getX(),
+				                                             (int)mappedEvent.getY());
 				return true;
 			}
 
@@ -482,6 +546,7 @@ public class SessionView extends View
 			                                           (int)mappedEvent.getY(), true);
 			sessionViewListener.onSessionViewLeftTouch((int)mappedEvent.getX(),
 			                                           (int)mappedEvent.getY(), false);
+			showTouchIndicator(e.getX(), e.getY());
 			return true;
 		}
 
@@ -500,6 +565,7 @@ public class SessionView extends View
 			sessionViewListener.onSessionViewLeftTouch((int)mappedEvent.getX(),
 			                                           (int)mappedEvent.getY(), false);
 			sessionViewListener.onSessionViewEndTouch();
+			showTouchIndicator(e.getX(), e.getY());
 			return true;
 		}
 	}

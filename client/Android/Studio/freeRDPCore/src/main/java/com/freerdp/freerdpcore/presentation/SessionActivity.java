@@ -271,6 +271,7 @@ public class SessionActivity extends AppCompatActivity
 
 		KeyboardView keyboardView = findViewById(R.id.extended_keyboard);
 		KeyboardView modifiersKeyboardView = findViewById(R.id.extended_keyboard_header);
+		View modifiersContainer = findViewById(R.id.modifiers_container);
 
 		scrollView = findViewById(R.id.sessionScrollView);
 		scrollView.setScrollViewListener(null);
@@ -287,9 +288,15 @@ public class SessionActivity extends AppCompatActivity
 
 		// Wire up the input manager (instance is attached later in bindSession()).
 		inputManager = new SessionInputManager(this, scrollView, sessionView, touchPointerView,
-		                                       keyboardView, modifiersKeyboardView);
+		                                       keyboardView, modifiersKeyboardView,
+		                                       modifiersContainer);
 		sessionView.setSessionViewListener(inputManager);
 		touchPointerView.setTouchPointerListener(inputManager);
+		findViewById(R.id.modifiers_toggle).setOnClickListener(v -> inputManager.toggleModifiersRow());
+
+		MagnifierView magnifierView = findViewById(R.id.magnifierView);
+		magnifierView.setContentSource(sessionView::getContentBitmap);
+		inputManager.setMagnifierView(magnifierView);
 		sessionView.setScaleGestureDetector(
 		    new ScaleGestureDetector(this, inputManager.getPinchZoomListener()));
 
@@ -445,11 +452,13 @@ public class SessionActivity extends AppCompatActivity
 			}
 		}
 
-		scrollView.setPadding(Math.max(safeLeft, navInsets.left), safeTop,
-		                      Math.max(safeRight, navInsets.right),
+		int scrollPadLeft = Math.max(safeLeft, navInsets.left);
+		scrollView.setPadding(scrollPadLeft, safeTop, Math.max(safeRight, navInsets.right),
 		                      Math.max(safeBottom, navInsets.bottom));
 		if (inputManager != null)
-			inputManager.setSafeInsets(safeLeft, safeTop);
+			// must match scrollView's actual left/top padding above, or touch-pointer clicks
+			// and the visible cursor drift apart (e.g. landscape with a side nav bar)
+			inputManager.setSafeInsets(scrollPadLeft, safeTop);
 
 		return WindowInsetsCompat.CONSUMED;
 	}

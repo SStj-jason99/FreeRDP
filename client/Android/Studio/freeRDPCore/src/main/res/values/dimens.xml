@@ -17,4 +17,6 @@
     <dimen name="tp_close_icon_padding">13dp</dimen>
     <dimen name="tp_puck_icon_padding">16dp</dimen>
     <dimen name="tp_elevation">3dp</dimen>
+
+    <dimen name="mod_toggle_size">32dp</dimen>
 </resources>

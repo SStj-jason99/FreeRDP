@@ -314,6 +314,13 @@ public class ApplicationSettingsActivity
 		    context.getString(R.string.preference_key_ui_auto_scroll_touchpointer), false);
 	}
 
+	public static boolean getShowMagnifier(Context context)
+	{
+		SharedPreferences preferences = get(context);
+		return preferences.getBoolean(context.getString(R.string.preference_key_ui_show_magnifier),
+		                              true);
+	}
+
 	public static String getClientName(Context context)
 	{
 		SharedPreferences preferences = get(context);

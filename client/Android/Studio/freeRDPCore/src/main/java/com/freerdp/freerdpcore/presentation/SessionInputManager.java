@@ -54,7 +54,13 @@ public class SessionInputManager
 	private final TouchPointerView touchPointerView;
 	private final KeyboardView keyboardView;
 	private final KeyboardView modifiersKeyboardView;
+	private final View modifiersContainer;
 	private final PinchZoomListener pinchZoomListener = new PinchZoomListener();
+
+	// Set post-construction via setMagnifierView(); null until then (and always null if the
+	// magnifier layout element isn't present for some reason), in which case magnifier calls
+	// are simply skipped.
+	private MagnifierView magnifierView;
 
 	private Keyboard modifiersKeyboard;
 	private Keyboard specialkeysKeyboard;
@@ -80,12 +86,14 @@ public class SessionInputManager
 	// keyboard visibility flags
 	private boolean sysKeyboardVisible = false;
 	private boolean extKeyboardVisible = false;
+	// whether the modifier-key row (Ctrl/Alt/Shift/...) is expanded under its toggle handle
+	private boolean modifiersExpanded = false;
 
 	private final Handler handler;
 
 	public SessionInputManager(Context context, ScrollView2D scrollView, SessionView sessionView,
 	                           TouchPointerView touchPointerView, KeyboardView keyboardView,
-	                           KeyboardView modifiersKeyboardView)
+	                           KeyboardView modifiersKeyboardView, View modifiersContainer)
 	{
 		this.context = context;
 		this.scrollView = scrollView;
@@ -93,6 +101,7 @@ public class SessionInputManager
 		this.touchPointerView = touchPointerView;
 		this.keyboardView = keyboardView;
 		this.modifiersKeyboardView = modifiersKeyboardView;
+		this.modifiersContainer = modifiersContainer;
 		this.handler = new InputHandler();
 
 		this.keyboardMapper = new KeyboardMapper();
@@ -127,6 +136,11 @@ public class SessionInputManager
 	public void setBitmap(Bitmap bitmap)
 	{
 		this.bitmap = bitmap;
+	}
+
+	public void setMagnifierView(MagnifierView magnifierView)
+	{
+		this.magnifierView = magnifierView;
 	}
 
 	// Returns a listener that can be wired into a ScaleGestureDetector for pinch-to-zoom.
@@ -175,6 +189,18 @@ public class SessionInputManager
 		return sysKeyboardVisible || extKeyboardVisible;
 	}
 
+	// Shows/hides the modifier-key row (Ctrl/Alt/Shift/...) under its toggle handle.
+	// Only has an effect while a keyboard is actually visible; the handle itself is shown
+	// alongside whichever keyboard is open, but the row starts collapsed each time so it
+	// doesn't cover content unless the user actually needs a modifier key.
+	public void toggleModifiersRow()
+	{
+		if (!isAnyKeyboardVisible())
+			return;
+		modifiersExpanded = !modifiersExpanded;
+		modifiersKeyboardView.setVisibility(modifiersExpanded ? View.VISIBLE : View.GONE);
+	}
+
 	// displays either the system or the extended keyboard or none of them
 	private void showKeyboard(boolean showSystemKeyboard, boolean showExtendedKeyboard)
 	{
@@ -185,8 +211,8 @@ public class SessionInputManager
 			// show system keyboard
 			setSoftInputState(true);
 
-			// show modifiers keyboard
-			modifiersKeyboardView.setVisibility(View.VISIBLE);
+			// show the modifiers toggle handle (row itself stays collapsed until tapped)
+			modifiersContainer.setVisibility(View.VISIBLE);
 		}
 		else if (showExtendedKeyboard)
 		{
@@ -196,14 +222,16 @@ public class SessionInputManager
 			// show extended keyboard
 			keyboardView.setKeyboard(specialkeysKeyboard);
 			keyboardView.setVisibility(View.VISIBLE);
-			modifiersKeyboardView.setVisibility(View.VISIBLE);
+			modifiersContainer.setVisibility(View.VISIBLE);
 		}
 		else
 		{
 			// hide both
 			setSoftInputState(false);
 			keyboardView.setVisibility(View.GONE);
+			modifiersContainer.setVisibility(View.GONE);
 			modifiersKeyboardView.setVisibility(View.GONE);
+			modifiersExpanded = false;
 
 			// clear any active key modifiers
 			keyboardMapper.clearlAllModifiers();
@@ -446,6 +474,19 @@ public class SessionInputManager
 		LibFreeRDP.sendCursorEvent(instance, 0, 0, Mouse.getHScrollEvent(context, right));
 	}
 
+	@Override public void onSessionViewDragPreview(int rawScreenX, int rawScreenY, int contentX,
+	                                               int contentY)
+	{
+		if (magnifierView != null && ApplicationSettingsActivity.getShowMagnifier(context))
+			magnifierView.show(rawScreenX, rawScreenY, contentX, contentY);
+	}
+
+	@Override public void onSessionViewDragPreviewEnd()
+	{
+		if (magnifierView != null)
+			magnifierView.hide();
+	}
+
 	// ****************************************************************************
 	// TouchPointerView.TouchPointerListener
 
@@ -478,6 +519,13 @@ public class SessionInputManager
 		Point p = mapScreenCoordToSessionCoord(x, y);
 		LibFreeRDP.sendCursorEvent(instance, p.x, p.y, Mouse.getMoveEvent());
 
+		if (magnifierView != null && ApplicationSettingsActivity.getShowMagnifier(context))
+		{
+			int[] loc = new int[2];
+			touchPointerView.getLocationOnScreen(loc);
+			magnifierView.show(loc[0] + x, loc[1] + y, p.x, p.y);
+		}
+
 		if (ApplicationSettingsActivity.getAutoScrollTouchPointer(context) &&
 		    !handler.hasMessages(MSG_SCROLLING_REQUESTED))
 		{
@@ -488,6 +536,8 @@ public class SessionInputManager
 	@Override public void onTouchPointerMoveEnd()
 	{
 		handler.removeMessages(MSG_SCROLLING_REQUESTED);
+		if (magnifierView != null)
+			magnifierView.hide();
 	}
 
 	@Override public void onTouchPointerScroll(boolean down)

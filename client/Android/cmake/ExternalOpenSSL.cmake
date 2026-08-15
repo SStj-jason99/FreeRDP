@@ -25,8 +25,27 @@ set(NDK_TOOLCHAIN_BIN "${NDK_ROOT}/toolchains/llvm/prebuilt/${NDK_HOST_PLATFORM}
 if(CMAKE_HOST_WIN32)
   # WIN32 reflects the *target* (Android) in this cross-compile, not the
   # build host, so check CMAKE_HOST_WIN32 instead.
+  #
+  # OpenSSL's Configure refuses to run under a "Windows-native" Perl (e.g.
+  # Strawberry Perl) because it emits backslash paths; it wants a Perl that
+  # produces Unix-style paths. Rather than requiring the whole system PATH
+  # to be reordered (which breaks other tools, e.g. pkg-config.bat, that
+  # depend on the native Perl being found first), prepend a Unix-style Perl
+  # directory just for this external project if one is available.
+  set(OSSL_UNIX_PERL_BIN "")
+  foreach(_candidate "C:/msys64/usr/bin" "$ENV{ProgramFiles}/Git/usr/bin" "C:/Program Files/Git/usr/bin")
+    if(EXISTS "${_candidate}/perl.exe")
+      set(OSSL_UNIX_PERL_BIN "${_candidate}")
+      break()
+    endif()
+  endforeach()
+
   string(REPLACE ";" "$<SEMICOLON>" OSSL_ENV_PATH_TAIL "$ENV{PATH}")
-  set(OSSL_ENV_PATH "${NDK_TOOLCHAIN_BIN}$<SEMICOLON>${OSSL_ENV_PATH_TAIL}")
+  if(OSSL_UNIX_PERL_BIN)
+    set(OSSL_ENV_PATH "${OSSL_UNIX_PERL_BIN}$<SEMICOLON>${NDK_TOOLCHAIN_BIN}$<SEMICOLON>${OSSL_ENV_PATH_TAIL}")
+  else()
+    set(OSSL_ENV_PATH "${NDK_TOOLCHAIN_BIN}$<SEMICOLON>${OSSL_ENV_PATH_TAIL}")
+  endif()
 else()
   set(OSSL_ENV_PATH "${NDK_TOOLCHAIN_BIN}:$ENV{PATH}")
 endif()

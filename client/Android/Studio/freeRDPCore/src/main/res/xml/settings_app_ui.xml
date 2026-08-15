@@ -24,6 +24,10 @@
         android:title="@string/settings_ui_auto_scroll_touchpointer" />
     <CheckBoxPreference
         android:defaultValue="true"
+        android:key="@string/preference_key_ui_show_magnifier"
+        android:title="@string/settings_ui_show_magnifier" />
+    <CheckBoxPreference
+        android:defaultValue="true"
         android:key="@string/preference_key_ui_ask_on_exit"
         android:title="@string/settings_ui_ask_on_exit" />
     <CheckBoxPreference

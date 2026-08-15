@@ -56,13 +56,40 @@
         android:layout_height="match_parent"
         android:visibility="invisible" />
 
-    <android.inputmethodservice.KeyboardView
-        android:id="@+id/extended_keyboard_header"
+    <com.freerdp.freerdpcore.presentation.MagnifierView
+        android:id="@+id/magnifierView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/modifiers_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:visibility="gone" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/modifiers_toggle"
+            android:layout_width="@dimen/mod_toggle_size"
+            android:layout_height="@dimen/mod_toggle_size"
+            android:background="@drawable/bg_tp_circle"
+            android:contentDescription="@string/menu_modifiers_toggle"
+            android:elevation="@dimen/tp_elevation"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_unfold_more"
+            android:tint="@color/tp_icon" />
+
+        <android.inputmethodservice.KeyboardView
+            android:id="@+id/extended_keyboard_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
     <include
         layout="@layout/floating_toolbar"
