@@ -222,7 +222,7 @@ public class GestureDetector
 				if (mIgnoreMultitouch)
 				{
 					// Multitouch event - abort.
-					cancel();
+					cancel(ev);
 				}
 				break;
 
@@ -361,13 +361,13 @@ public class GestureDetector
 				handled |= mListener.onUp(ev);
 				break;
 			case MotionEvent.ACTION_CANCEL:
-				cancel();
+				cancel(ev);
 				break;
 		}
 		return handled;
 	}
 
-	private void cancel()
+	private void cancel(MotionEvent ev)
 	{
 		mHandler.removeMessages(SHOW_PRESS);
 		mHandler.removeMessages(LONG_PRESS);
@@ -378,7 +378,12 @@ public class GestureDetector
 		mStillDown = false;
 		if (mInLongPress)
 		{
+			// A long press was in progress when the gesture was aborted (second finger down,
+			// or an ancestor view stealing the gesture). Route through onLongPressUp so
+			// listeners release whatever they set up in onLongPress/onScroll (e.g. a synthetic
+			// mouse-button-down, or a drag-preview magnifier) instead of leaving it stuck.
 			mInLongPress = false;
+			mListener.onLongPressUp(ev);
 		}
 	}
 

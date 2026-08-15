@@ -7,8 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.pocketremote.freerdp.R
 import com.pocketremote.freerdp.data.DefaultCredentials
 import com.pocketremote.freerdp.data.HostProfile
 
@@ -17,6 +19,7 @@ import com.pocketremote.freerdp.data.HostProfile
 @Composable
 fun AddEditHostScreen(
     existing: HostProfile?,
+    existingHosts: List<HostProfile>,
     defaults: DefaultCredentials,
     onSave: (HostProfile) -> Unit,
     onCancel: () -> Unit,
@@ -31,14 +34,22 @@ fun AddEditHostScreen(
     var rdpPassword by remember { mutableStateOf(existing?.rdpPassword ?: defaults.rdpPassword) }
     var blacken by remember { mutableStateOf(existing?.blackenWallpaperOnConnect ?: true) }
 
+    // host(SSH 접속 주소)만 기준으로 중복을 본다. AMR 경유 접속의 rdpTargetHost는 기본값이
+    // 자동으로 채워지고 실사용 환경에서 여러 호기가 같은 값을 공유하는 경우가 많아, 이걸
+    // 기준으로 삼으면 host를 입력하기도 전에 오탐이 뜬다 - host가 진짜 유일 식별자다.
+    val effectiveTarget = host.trim().lowercase()
+    val isDuplicate = effectiveTarget.isNotBlank() && existingHosts.any {
+        it.id != existing?.id && it.host.trim().lowercase() == effectiveTarget
+    }
+
     val canSave = displayName.isNotBlank() && host.isNotBlank() && sshUsername.isNotBlank() &&
-        rdpUsername.isNotBlank() && (!useJumpHost || rdpTargetHost.isNotBlank())
+        rdpUsername.isNotBlank() && (!useJumpHost || rdpTargetHost.isNotBlank()) && !isDuplicate
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (existing == null) "호기 추가" else "호기 수정") },
-                navigationIcon = { TextButton(onClick = onCancel) { Text("취소") } },
+                title = { Text(if (existing == null) stringResource(R.string.addedit_title_add) else stringResource(R.string.addedit_title_edit)) },
+                navigationIcon = { TextButton(onClick = onCancel) { Text(stringResource(R.string.common_cancel)) } },
                 actions = {
                     TextButton(
                         enabled = canSave,
@@ -57,7 +68,7 @@ fun AddEditHostScreen(
                                 )
                             )
                         },
-                    ) { Text("저장") }
+                    ) { Text(stringResource(R.string.common_save)) }
                 },
             )
         },
@@ -70,11 +81,18 @@ fun AddEditHostScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(displayName, { displayName = it }, label = { Text("별명 (예: 3호기)") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(host, { host = it }, label = { Text("SSH 접속 주소 (IP)") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(sshUsername, { sshUsername = it }, label = { Text("SSH 계정") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(displayName, { displayName = it }, label = { Text(stringResource(R.string.addedit_label_display_name)) }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(
-                sshPassword, { sshPassword = it }, label = { Text("SSH 비밀번호") },
+                host, { host = it }, label = { Text(stringResource(R.string.addedit_label_ssh_host)) },
+                isError = isDuplicate,
+                supportingText = {
+                    if (isDuplicate) Text(stringResource(R.string.addedit_error_duplicate), color = MaterialTheme.colorScheme.error)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(sshUsername, { sshUsername = it }, label = { Text(stringResource(R.string.addedit_label_ssh_username)) }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                sshPassword, { sshPassword = it }, label = { Text(stringResource(R.string.addedit_label_ssh_password)) },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -82,25 +100,29 @@ fun AddEditHostScreen(
             HorizontalDivider()
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text("AMR 경유 접속", modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.addedit_label_use_jump_host), modifier = Modifier.weight(1f))
                 Switch(checked = useJumpHost, onCheckedChange = { useJumpHost = it })
             }
             if (useJumpHost) {
                 OutlinedTextField(
                     rdpTargetHost, { rdpTargetHost = it },
-                    label = { Text("실제 RDP 대상 PC IP (비전 PC)") },
+                    label = { Text(stringResource(R.string.addedit_label_rdp_target_host)) },
+                    isError = isDuplicate,
+                    supportingText = {
+                        if (isDuplicate) Text(stringResource(R.string.addedit_error_duplicate), color = MaterialTheme.colorScheme.error)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            OutlinedTextField(rdpUsername, { rdpUsername = it }, label = { Text("RDP 계정") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(rdpUsername, { rdpUsername = it }, label = { Text(stringResource(R.string.addedit_label_rdp_username)) }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(
-                rdpPassword, { rdpPassword = it }, label = { Text("RDP 비밀번호") },
+                rdpPassword, { rdpPassword = it }, label = { Text(stringResource(R.string.addedit_label_rdp_password)) },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text("접속 시 배경화면 검게(속도 최적화)", modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.addedit_label_blacken), modifier = Modifier.weight(1f))
                 Switch(checked = blacken, onCheckedChange = { blacken = it })
             }
         }

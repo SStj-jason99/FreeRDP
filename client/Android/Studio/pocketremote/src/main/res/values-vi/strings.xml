@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Iris Remote (FreeRDP)</string>
+
+    <!-- Shared across multiple screens -->
+    <string name="common_cancel">Hủy</string>
+    <string name="common_save">Lưu</string>
+    <string name="common_close">Đóng</string>
+    <string name="common_delete">Xóa</string>
+    <string name="common_edit">Sửa</string>
+    <string name="common_label_username">Tên đăng nhập</string>
+    <string name="common_label_password">Mật khẩu</string>
+
+    <!-- HostListScreen -->
+    <string name="hostlist_menu_more">Thêm tùy chọn</string>
+    <string name="hostlist_menu_bulk_add">Đăng ký nhiều máy cùng lúc</string>
+    <string name="hostlist_menu_settings">Cài đặt</string>
+    <string name="hostlist_menu_language">Ngôn ngữ</string>
+    <string name="hostlist_language_dialog_title">Chọn ngôn ngữ</string>
+    <string name="hostlist_action_add">Thêm</string>
+    <string name="hostlist_empty_state">Chưa có máy nào được đăng ký. Nhấn + để thêm.</string>
+    <string name="hostlist_action_files">Tệp (không cần kết nối)</string>
+    <string name="hostlist_target_via_format">%1$s → %2$s</string>
+
+    <!-- AddEditHostScreen -->
+    <string name="addedit_title_add">Thêm máy</string>
+    <string name="addedit_title_edit">Sửa máy</string>
+    <string name="addedit_label_display_name">Biệt danh (vd: Máy số 3)</string>
+    <string name="addedit_label_ssh_host">Địa chỉ SSH (IP)</string>
+    <string name="addedit_error_duplicate">Máy này đã được đăng ký (cùng địa chỉ đích)</string>
+    <string name="addedit_label_ssh_username">Tài khoản SSH</string>
+    <string name="addedit_label_ssh_password">Mật khẩu SSH</string>
+    <string name="addedit_label_use_jump_host">Kết nối qua AMR</string>
+    <string name="addedit_label_rdp_target_host">IP máy tính RDP thực tế (PC vision)</string>
+    <string name="addedit_label_rdp_username">Tài khoản RDP</string>
+    <string name="addedit_label_rdp_password">Mật khẩu RDP</string>
+    <string name="addedit_label_blacken">Làm đen nền màn hình khi kết nối (tối ưu tốc độ)</string>
+
+    <!-- BulkAddScreen -->
+    <string name="bulkadd_toast_done">Đã đăng ký %1$d máy</string>
+    <string name="bulkadd_toast_done_with_skip">Đã đăng ký %1$d máy, bỏ qua %2$d máy (đã đăng ký từ trước)</string>
+    <string name="bulkadd_title">Đăng ký nhiều máy cùng lúc</string>
+    <string name="bulkadd_desc">Chỉ cần nhập dải số máy – địa chỉ AMR và tài khoản sẽ tự động điền.</string>
+    <string name="bulkadd_label_start_number">Số máy bắt đầu</string>
+    <string name="bulkadd_label_count">Số lượng</string>
+    <string name="bulkadd_toggle_hide_advanced">Ẩn cài đặt chi tiết</string>
+    <string name="bulkadd_toggle_show_advanced">Cài đặt chi tiết</string>
+    <string name="bulkadd_label_name_pattern">Mẫu tên hiển thị ({n} sẽ được thay bằng số máy)</string>
+    <string name="bulkadd_section_ssh">Tài khoản SSH chung (thông tin đăng nhập AMR khi kết nối qua AMR)</string>
+    <string name="bulkadd_label_ssh_port">Cổng SSH</string>
+    <string name="bulkadd_label_rdp_port">Cổng RDP</string>
+    <string name="bulkadd_label_rdp_target_host">IP PC vision (đích RDP)</string>
+    <string name="bulkadd_section_rdp_account">Tài khoản PC vision</string>
+    <string name="bulkadd_label_blacken">Làm đen nền màn hình khi kết nối (không áp dụng khi qua AMR)</string>
+    <string name="bulkadd_button_preview">Xem trước</string>
+    <string name="bulkadd_error_check_numbers">Vui lòng kiểm tra số máy và số lượng</string>
+    <string name="bulkadd_button_register_all">Đăng ký tất cả</string>
+    <string name="bulkadd_dialog_title_duplicates">Một số máy đã được đăng ký</string>
+    <string name="bulkadd_dialog_msg_duplicates">Trong tổng số %1$d máy, %2$d máy đã được đăng ký và sẽ bị bỏ qua.\nĐăng ký %3$d máy còn lại chứ?</string>
+    <string name="bulkadd_dialog_confirm">Đăng ký</string>
+
+    <!-- FileBrowserScreen -->
+    <string name="filebrowser_error_profile_not_found">Không tìm thấy hồ sơ</string>
+    <string name="filebrowser_error_ssh_failed">Kết nối SSH thất bại: %1$s</string>
+    <string name="filebrowser_error_sftp_open_failed">Không mở được SFTP: %1$s</string>
+    <string name="filebrowser_error_timeout">Kết nối đã hết thời gian chờ. Hãy kiểm tra máy đã bật và đang kết nối mạng.</string>
+    <string name="filebrowser_toast_upload_done">Tải lên hoàn tất</string>
+    <string name="filebrowser_toast_upload_failed">Tải lên thất bại: %1$s</string>
+    <string name="filebrowser_title_selected_count">Đã chọn %1$d mục</string>
+    <string name="filebrowser_action_cancel_selection">Hủy chọn</string>
+    <string name="filebrowser_action_download_selected">Tải xuống mục đã chọn</string>
+    <string name="filebrowser_toast_download_summary">Đã tải xuống %1$d / %2$d</string>
+    <string name="filebrowser_path_home">/ (Trang chủ)</string>
+    <string name="filebrowser_action_exit">Thoát</string>
+    <string name="filebrowser_action_go_desktop">Đi tới Desktop</string>
+    <string name="filebrowser_action_go_drive_root">Đi tới ổ đĩa C:</string>
+    <string name="filebrowser_action_upload">Tải lên</string>
+    <string name="filebrowser_item_parent_folder">Lên thư mục cha</string>
+    <string name="filebrowser_row_info_with_size">%1$s KB · Sửa đổi %2$s</string>
+    <string name="filebrowser_row_info_no_size">Sửa đổi %1$s</string>
+    <string name="filebrowser_image_cannot_display">Không thể hiển thị hình ảnh</string>
+    <string name="filebrowser_image_load_failed">Tải thất bại</string>
+    <string name="filebrowser_image_page_indicator">%1$s · %2$d/%3$d</string>
+    <string name="filebrowser_action_search">Tìm kiếm</string>
+    <string name="filebrowser_search_placeholder">Nội dung cần tìm</string>
+    <string name="filebrowser_search_no_matches">0 kết quả</string>
+    <string name="filebrowser_search_match_count">%1$d/%2$d</string>
+    <string name="filebrowser_action_previous">Trước</string>
+    <string name="filebrowser_action_next">Tiếp</string>
+    <string name="filebrowser_truncated_warning">Chỉ tải được khoảng 200KB đầu tệp. Hãy tải xuống để xem toàn bộ nội dung.</string>
+    <string name="filebrowser_toast_save_done">Đã lưu</string>
+    <string name="filebrowser_toast_save_failed">Lưu thất bại: %1$s</string>
+    <string name="filebrowser_toast_download_saved">Đã lưu: %1$s</string>
+    <string name="filebrowser_toast_download_failed">Tải xuống thất bại: %1$s</string>
+    <string name="filebrowser_toast_preview_failed">Xem trước thất bại: %1$s</string>
+</resources>

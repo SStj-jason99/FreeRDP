@@ -61,6 +61,8 @@ public class SessionInputManager
 	// magnifier layout element isn't present for some reason), in which case magnifier calls
 	// are simply skipped.
 	private MagnifierView magnifierView;
+	// Reused by onTouchPointerMove() to avoid an allocation on every pointer-move event.
+	private final int[] touchPointerLoc = new int[2];
 
 	private Keyboard modifiersKeyboard;
 	private Keyboard specialkeysKeyboard;
@@ -189,6 +191,21 @@ public class SessionInputManager
 		return sysKeyboardVisible || extKeyboardVisible;
 	}
 
+	public boolean isSysKeyboardVisible()
+	{
+		return sysKeyboardVisible;
+	}
+
+	public boolean isExtKeyboardVisible()
+	{
+		return extKeyboardVisible;
+	}
+
+	public boolean isTouchPointerVisible()
+	{
+		return touchPointerView.getVisibility() == View.VISIBLE;
+	}
+
 	// Shows/hides the modifier-key row (Ctrl/Alt/Shift/...) under its toggle handle.
 	// Only has an effect while a keyboard is actually visible; the handle itself is shown
 	// alongside whichever keyboard is open, but the row starts collapsed each time so it
@@ -212,7 +229,8 @@ public class SessionInputManager
 			setSoftInputState(true);
 
 			// show the modifiers toggle handle (row itself stays collapsed until tapped)
-			modifiersContainer.setVisibility(View.VISIBLE);
+			if (modifiersContainer != null)
+				modifiersContainer.setVisibility(View.VISIBLE);
 		}
 		else if (showExtendedKeyboard)
 		{
@@ -222,14 +240,16 @@ public class SessionInputManager
 			// show extended keyboard
 			keyboardView.setKeyboard(specialkeysKeyboard);
 			keyboardView.setVisibility(View.VISIBLE);
-			modifiersContainer.setVisibility(View.VISIBLE);
+			if (modifiersContainer != null)
+				modifiersContainer.setVisibility(View.VISIBLE);
 		}
 		else
 		{
 			// hide both
 			setSoftInputState(false);
 			keyboardView.setVisibility(View.GONE);
-			modifiersContainer.setVisibility(View.GONE);
+			if (modifiersContainer != null)
+				modifiersContainer.setVisibility(View.GONE);
 			modifiersKeyboardView.setVisibility(View.GONE);
 			modifiersExpanded = false;
 
@@ -322,10 +342,22 @@ public class SessionInputManager
 		}
 		else
 		{
+			touchPointerView.refreshFromSettings();
 			touchPointerView.setVisibility(View.VISIBLE);
 			sessionView.setTouchPointerPadding(touchPointerView.getPointerWidth(),
 			                                   touchPointerView.getPointerHeight());
 		}
+	}
+
+	// Toggles the drag-preview magnifier on/off (driven by the floating toolbar), without
+	// requiring a trip through the settings screen. Persisted, so it sticks across sessions
+	// and stays in sync with the same CheckBoxPreference there.
+	public void toggleMagnifier()
+	{
+		boolean show = !ApplicationSettingsActivity.getShowMagnifier(context);
+		ApplicationSettingsActivity.setShowMagnifier(context, show);
+		if (!show && magnifierView != null)
+			magnifierView.hide();
 	}
 
 	// ****************************************************************************
@@ -521,9 +553,8 @@ public class SessionInputManager
 
 		if (magnifierView != null && ApplicationSettingsActivity.getShowMagnifier(context))
 		{
-			int[] loc = new int[2];
-			touchPointerView.getLocationOnScreen(loc);
-			magnifierView.show(loc[0] + x, loc[1] + y, p.x, p.y);
+			touchPointerView.getLocationOnScreen(touchPointerLoc);
+			magnifierView.show(touchPointerLoc[0] + x, touchPointerLoc[1] + y, p.x, p.y);
 		}
 
 		if (ApplicationSettingsActivity.getAutoScrollTouchPointer(context) &&

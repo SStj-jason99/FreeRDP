@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Button labels -->
+    <string name="yes">Có</string>
+    <string name="no">Không</string>
+    <string name="cancel">Hủy</string>
+    <string name="cont">Tiếp tục</string>
+    <string name="login">Đăng nhập</string>
+    <!-- Home menu items -->
+    <string name="menu_about">Giới thiệu</string>
+    <string name="menu_help">Trợ giúp</string>
+    <string name="menu_new_bookmark">Kết nối mới</string>
+    <string name="menu_app_settings">Cài đặt</string>
+    <!-- Bookmark menu items -->
+    <string name="menu_connect">Kết nối</string>
+    <string name="menu_edit">Sửa</string>
+    <string name="menu_delete">Xóa</string>
+    <!-- Session menu items -->
+    <string name="menu_sys_keyboard">Bàn phím</string>
+    <string name="menu_ext_keyboard">Phím chức năng</string>
+    <string name="menu_touch_pointer">Con trỏ cảm ứng</string>
+    <!-- List section headers -->
+    <!-- Search strings -->
+    <!-- List placeholder labels -->
+    <!-- Bookmark settings strings -->
+    <string name="settings_cat_host">Máy chủ</string>
+    <string name="settings_label">Tên</string>
+    <string name="settings_hostname">Tên máy chủ</string>
+    <string name="settings_port">Cổng</string>
+    <string name="settings_cat_credentials">Tài khoản</string>
+    <string name="settings_credentials">Tài khoản</string>
+    <string name="settings_username">Tên đăng nhập</string>
+    <string name="settings_password">Mật khẩu</string>
+    <string name="settings_domain">Miền (Domain)</string>
+    <string name="settings_cat_settings">Cài đặt</string>
+    <string name="settings_screen">Màn hình</string>
+    <string name="settings_cat_screen">Cài đặt màn hình</string>
+    <string name="settings_colors">Màu sắc</string>
+    <string-array name="colors_array">
+        <item>Palette (8 Bit)</item>
+        <item>High Color (15 Bit)</item>
+        <item>High Color (16 Bit)</item>
+        <item>True Color (24 Bit)</item>
+        <item>Highest Quality (32 Bit)</item>
+    </string-array>
+    <string name="settings_resolution">Độ phân giải</string>
+    <string name="resolution_automatic">Tự động</string>
+    <string name="resolution_fit">Vừa màn hình</string>
+    <string name="resolution_custom">Tùy chỉnh</string>
+    <string-array name="resolutions_array">
+        <item>Tự động</item>
+        <item>Vừa màn hình</item>
+        <item>Tùy chỉnh</item>
+        <item>640x480</item>
+        <item>720x480</item>
+        <item>800x600</item>
+        <item>1024x768</item>
+        <item>1280x1024</item>
+        <item>1440x900</item>
+        <item>1920x1080</item>
+        <item>1920x1200</item>
+    </string-array>
+    <string name="settings_width">Chiều rộng</string>
+    <string name="settings_height">Chiều cao</string>
+    <string name="settings_cat_scale">Cài đặt tỷ lệ</string>
+    <string name="settings_scale">Tỷ lệ</string>
+    <string name="settings_scale_desktop">Tỷ lệ desktop</string>
+    <string name="settings_scale_device">Tỷ lệ thiết bị</string>
+    <string name="settings_performance">Hiệu năng</string>
+    <string name="settings_cat_performance">Cài đặt hiệu năng</string>
+    <string name="settings_perf_remotefx">RemoteFX</string>
+    <string name="settings_perf_wallpaper">Hình nền desktop</string>
+    <string name="settings_perf_font_smoothing">Làm mượt chữ</string>
+    <string name="settings_perf_desktop_composition">Desktop composition</string>
+    <string name="settings_perf_full_window_drag">Hiện nội dung cửa sổ khi kéo</string>
+    <string name="settings_perf_menu_animation">Hiệu ứng menu</string>
+    <string name="settings_perf_theming">Kiểu giao diện</string>
+    <string name="settings_advanced">Nâng cao</string>
+    <string name="settings_cat_gateway">Gateway</string>
+    <string name="settings_enable_gateway_settings">Dùng Gateway</string>
+    <string name="settings_gateway_settings">Cài đặt Gateway</string>
+    <string name="settings_redirect_sdcard">Chuyển tiếp thẻ SD</string>
+    <string name="settings_redirect_sound">Chuyển tiếp âm thanh</string>
+    <string-array name="redirect_sound_array">
+        <item>Không phát</item>
+        <item>Phát trên máy chủ</item>
+        <item>Phát trên thiết bị</item>
+    </string-array>
+    <string name="settings_redirect_microphone">Chuyển tiếp micro</string>
+    <string name="settings_cat_redirection">Chuyển tiếp</string>
+    <string name="settings_redirect_camera">Chuyển tiếp camera</string>
+    <string name="settings_redirect_printer">Chuyển tiếp máy in</string>
+    <string name="settings_security">Bảo mật</string>
+    <string-array name="security_array">
+        <item>Tự động</item>
+        <item>RDP</item>
+        <item>TLS</item>
+        <item>NLA</item>
+    </string-array>
+    <string name="settings_remote_program">Chương trình từ xa</string>
+    <string name="settings_work_dir">Thư mục làm việc</string>
+    <string name="settings_async_channel">Kênh bất đồng bộ</string>
+    <string name="settings_async_update">Cập nhật bất đồng bộ</string>
+    <string name="settings_console_mode">Chế độ console</string>
+    <string name="settings_cat_session">Phiên làm việc</string>
+    <string name="settings_cat_hyperv">Hyper-V</string>
+    <string name="settings_vmconnect_mode">Console Hyper-V (vmconnect)</string>
+    <string name="settings_vmconnect_guid">VM ID (GUID)</string>
+    <string name="settings_alternate_shell">Shell thay thế</string>
+    <!-- App settings strings -->
+    <string name="settings_password_present">*******</string>
+    <string name="settings_password_empty">Vui lòng nhập mật khẩu</string>
+    <string name="pref_title_theme">Giao diện ứng dụng</string>
+    <string-array name="pref_theme_entries">
+        <item>Theo hệ thống</item>
+        <item>Sáng</item>
+        <item>Tối</item>
+    </string-array>
+    <string name="settings_cat_ui">Giao diện người dùng</string>
+    <string name="settings_ui_hide_status_bar">Ẩn thanh trạng thái</string>
+    <string name="settings_ui_hide_navigation_bar">Ẩn thanh điều hướng</string>
+    <string name="settings_ui_swap_mouse_buttons">Đổi nút chuột</string>
+    <string name="settings_ui_invert_scrolling">Đảo chiều cuộn</string>
+    <string name="settings_ui_auto_scroll_touchpointer">Tự động cuộn con trỏ cảm ứng</string>
+    <string name="settings_ui_show_magnifier">Hiện kính lúp khi kéo</string>
+    <string name="settings_ui_touchpointer_opacity">Độ mờ đục bàn di cảm ứng</string>
+    <string name="settings_ui_touchpointer_sensitivity">Độ nhạy kéo con trỏ cảm ứng</string>
+    <string name="settings_ui_toolbar_opacity">Độ mờ đục thanh công cụ nổi</string>
+    <string name="settings_ui_ask_on_exit">Hỏi khi thoát</string>
+    <string name="settings_ui_fit_rounded_corners">Khớp với góc bo tròn</string>
+    <string name="settings_ui_use_back_as_altf4">Dùng nút Back làm Alt+F4</string>
+    <string name="settings_cat_power">Tiết kiệm pin</string>
+    <string name="settings_cat_client">Máy khách</string>
+    <string name="settings_power_disconnect_timeout">Ngắt kết nối khi không dùng</string>
+    <string name="settings_power_keep_screen_on_when_connected">Giữ màn hình sáng khi kết nối</string>
+    <string name="settings_cat_security">Bảo mật</string>
+    <string name="settings_security_accept_certificates">Chấp nhận mọi chứng chỉ</string>
+    <string name="settings_security_clear_certificate_cache">Xóa bộ nhớ đệm chứng chỉ</string>
+    <string name="settings_cat_experimental">Tính năng thử nghiệm</string>
+    <string name="settings_experimental_remoteapp">Cửa sổ RemoteApp</string>
+    <string name="settings_experimental_remoteapp_summary">Hiển thị chương trình từ xa dưới dạng cửa sổ riêng thay vì toàn màn hình desktop. Đây là tính năng thử nghiệm nên có thể không ổn định.</string>
+    <string name="settings_experimental_camera">Chuyển tiếp camera</string>
+    <string name="settings_experimental_camera_summary">Chia sẻ camera của thiết bị với phiên làm việc từ xa. Đây là tính năng thử nghiệm nên có thể không ổn định.</string>
+    <!-- Activity titles -->
+    <string name="title_bookmark_settings">Cài đặt kết nối</string>
+    <string name="title_application_settings">Cài đặt</string>
+    <string name="title_create_shortcut">Kết nối RDP</string>
+    <string name="title_help">Trợ giúp</string>
+    <string name="title_about">Giới thiệu</string>
+    <!-- Error message strings -->
+    <string name="error_bookmark_incomplete_title">Hủy mà không lưu?</string>
+    <string name="error_bookmark_incomplete">Nhấn "Hủy" để dừng lại!\nĐiền đầy đủ thông tin bắt buộc rồi nhấn "Tiếp tục"!</string>
+    <string name="error_connection_failure">Không thể kết nối tới máy chủ!</string>
+    <!-- Info message strings -->
+    <string name="info_capabilities_changed">Cài đặt màn hình đã được đổi sang giá trị mà máy chủ hỗ trợ.</string>
+    <string name="info_reset_success">Đã xóa bộ nhớ đệm chứng chỉ.</string>
+    <string name="info_reset_failed">Không thể xóa bộ nhớ đệm chứng chỉ!</string>
+    <!-- Dialog strings -->
+    <string name="dlg_title_verify_certificate">Xác minh chứng chỉ</string>
+    <string name="dlg_msg_verify_certificate">Không thể xác minh chứng chỉ. Vẫn muốn kết nối chứ?</string>
+    <string name="dlg_title_credentials">Vui lòng nhập tài khoản</string>
+    <string name="dlg_title_create_shortcut">Tạo lối tắt</string>
+    <string name="dlg_msg_create_shortcut">Tên lối tắt:</string>
+    <string name="dlg_msg_connecting">Đang kết nối &#8230;</string>
+    <string name="dlg_title_save_bookmark">Lưu kết nối?</string>
+    <string name="dlg_save_bookmark">Bạn có muốn lưu cài đặt kết nối này không?</string>
+    <string name="dlg_title_exit">Thoát ứng dụng?</string>
+    <string name="dlg_msg_exit">Bạn có muốn thoát ứng dụng không?</string>
+    <string name="dlg_title_clear_cert_cache">Xóa chứng chỉ?</string>
+    <string name="dlg_msg_clear_cert_cache">Bạn có muốn xóa tất cả chứng chỉ đã lưu trong bộ nhớ đệm không?</string>
+    <string name="debug_level">Mức độ debug</string>
+    <string name="settings_debug">Cài đặt debug</string>
+    <string name="preference_title_client_name">Tên máy khách</string>
+    <string name="pref_title_keyboard_accessibility">Phím tắt bàn phím vật lý</string>
+    <string name="pref_summary_keyboard_accessibility">Gửi các phím tắt hệ thống (như phím Win) tới màn hình desktop từ xa. Cần quyền truy cập hỗ trợ tiếp cận (accessibility).</string>
+</resources>

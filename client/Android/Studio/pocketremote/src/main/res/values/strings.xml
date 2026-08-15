@@ -1,4 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Iris Remote (FreeRDP)</string>
+
+    <!-- Shared across multiple screens -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_close">Close</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_label_username">Username</string>
+    <string name="common_label_password">Password</string>
+
+    <!-- HostListScreen -->
+    <string name="hostlist_menu_more">More options</string>
+    <string name="hostlist_menu_bulk_add">Register multiple at once</string>
+    <string name="hostlist_menu_settings">Settings</string>
+    <string name="hostlist_menu_language">Language</string>
+    <string name="hostlist_language_dialog_title">Language</string>
+    <string name="hostlist_action_add">Add</string>
+    <string name="hostlist_empty_state">No hosts registered yet. Tap + to add one.</string>
+    <string name="hostlist_action_files">Files (without connecting)</string>
+    <string name="hostlist_target_via_format">%1$s → %2$s</string>
+
+    <!-- AddEditHostScreen -->
+    <string name="addedit_title_add">Add host</string>
+    <string name="addedit_title_edit">Edit host</string>
+    <string name="addedit_label_display_name">Nickname (e.g. Unit 3)</string>
+    <string name="addedit_label_ssh_host">SSH address (IP)</string>
+    <string name="addedit_error_duplicate">This PC is already registered (same target)</string>
+    <string name="addedit_label_ssh_username">SSH account</string>
+    <string name="addedit_label_ssh_password">SSH password</string>
+    <string name="addedit_label_use_jump_host">Connect via AMR</string>
+    <string name="addedit_label_rdp_target_host">Actual RDP target PC IP (vision PC)</string>
+    <string name="addedit_label_rdp_username">RDP account</string>
+    <string name="addedit_label_rdp_password">RDP password</string>
+    <string name="addedit_label_blacken">Blacken wallpaper on connect (speed optimization)</string>
+
+    <!-- BulkAddScreen -->
+    <string name="bulkadd_toast_done">%1$d registered</string>
+    <string name="bulkadd_toast_done_with_skip">%1$d registered, %2$d skipped (already registered)</string>
+    <string name="bulkadd_title">Register multiple at once</string>
+    <string name="bulkadd_desc">Just enter the unit number range – the AMR address and account fill in automatically.</string>
+    <string name="bulkadd_label_start_number">Starting unit number</string>
+    <string name="bulkadd_label_count">How many</string>
+    <string name="bulkadd_toggle_hide_advanced">Hide advanced settings</string>
+    <string name="bulkadd_toggle_show_advanced">Advanced settings</string>
+    <string name="bulkadd_label_name_pattern">Display name pattern ({n} becomes the unit number)</string>
+    <string name="bulkadd_section_ssh">Shared SSH account (AMR login info when connecting via AMR)</string>
+    <string name="bulkadd_label_ssh_port">SSH port</string>
+    <string name="bulkadd_label_rdp_port">RDP port</string>
+    <string name="bulkadd_label_rdp_target_host">Vision PC (RDP target) IP</string>
+    <string name="bulkadd_section_rdp_account">Vision PC account</string>
+    <string name="bulkadd_label_blacken">Blacken wallpaper on connect (not applied via AMR)</string>
+    <string name="bulkadd_button_preview">Preview</string>
+    <string name="bulkadd_error_check_numbers">Please check the unit number and count</string>
+    <string name="bulkadd_button_register_all">Register all</string>
+    <string name="bulkadd_dialog_title_duplicates">Some units are already registered</string>
+    <string name="bulkadd_dialog_msg_duplicates">Of %1$d total, %2$d are already registered and will be skipped.\nRegister the remaining %3$d?</string>
+    <string name="bulkadd_dialog_confirm">Register</string>
+
+    <!-- FileBrowserScreen -->
+    <string name="filebrowser_error_profile_not_found">Profile not found</string>
+    <string name="filebrowser_error_ssh_failed">SSH connection failed: %1$s</string>
+    <string name="filebrowser_error_sftp_open_failed">Failed to open SFTP: %1$s</string>
+    <string name="filebrowser_error_timeout">Connection timed out. Please check the unit is powered on and connected to the network.</string>
+    <string name="filebrowser_toast_upload_done">Upload complete</string>
+    <string name="filebrowser_toast_upload_failed">Upload failed: %1$s</string>
+    <string name="filebrowser_title_selected_count">%1$d selected</string>
+    <string name="filebrowser_action_cancel_selection">Cancel selection</string>
+    <string name="filebrowser_action_download_selected">Download selected</string>
+    <string name="filebrowser_toast_download_summary">%1$d / %2$d downloaded</string>
+    <string name="filebrowser_path_home">/ (Home)</string>
+    <string name="filebrowser_action_exit">Exit</string>
+    <string name="filebrowser_action_go_desktop">Go to Desktop</string>
+    <string name="filebrowser_action_go_drive_root">Go to C: drive</string>
+    <string name="filebrowser_action_upload">Upload</string>
+    <string name="filebrowser_item_parent_folder">Go up one level</string>
+    <string name="filebrowser_row_info_with_size">%1$s KB · Modified %2$s</string>
+    <string name="filebrowser_row_info_no_size">Modified %1$s</string>
+    <string name="filebrowser_image_cannot_display">Unable to display image</string>
+    <string name="filebrowser_image_load_failed">Failed to load</string>
+    <string name="filebrowser_image_page_indicator">%1$s · %2$d/%3$d</string>
+    <string name="filebrowser_action_search">Search</string>
+    <string name="filebrowser_search_placeholder">Search text</string>
+    <string name="filebrowser_search_no_matches">0 results</string>
+    <string name="filebrowser_search_match_count">%1$d/%2$d</string>
+    <string name="filebrowser_action_previous">Previous</string>
+    <string name="filebrowser_action_next">Next</string>
+    <string name="filebrowser_truncated_warning">Only the first ~200KB of this file was loaded. Download it to see the full content.</string>
+    <string name="filebrowser_toast_save_done">Saved</string>
+    <string name="filebrowser_toast_save_failed">Save failed: %1$s</string>
+    <string name="filebrowser_toast_download_saved">Saved: %1$s</string>
+    <string name="filebrowser_toast_download_failed">Download failed: %1$s</string>
+    <string name="filebrowser_toast_preview_failed">Preview failed: %1$s</string>
 </resources>

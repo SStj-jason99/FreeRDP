@@ -81,6 +81,9 @@ list(APPEND ANDROID_NATIVE_DEPS uriparser)
 include(ExternalFreeRDP)
 
 add_custom_target(
-  copyLibs ${CMAKE_COMMAND} -E copy_directory "${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}" ${DEPS_INSTALL_DIR}
+  copyLibs
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${DEPS_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}" ${DEPS_INSTALL_DIR}
+  COMMAND ${CMAKE_COMMAND} -DSTRIP_TOOL=${CMAKE_STRIP} -DSTRIP_DIR=${DEPS_INSTALL_DIR} -P
+          ${CMAKE_CURRENT_LIST_DIR}/StripLibs.cmake
   DEPENDS freerdp
 )

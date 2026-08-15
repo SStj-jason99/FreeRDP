@@ -23,6 +23,7 @@ import com.pocketremote.freerdp.rdp.FreeRdpLauncher
 import com.pocketremote.freerdp.ssh.SshTunnelManager
 import com.pocketremote.freerdp.ui.screens.AddEditHostScreen
 import com.pocketremote.freerdp.ui.screens.BulkAddScreen
+import com.pocketremote.freerdp.ui.screens.FileBrowserScreen
 import com.pocketremote.freerdp.ui.screens.HostListScreen
 import com.pocketremote.freerdp.ui.theme.PocketRemoteTheme
 import kotlinx.coroutines.launch
@@ -97,10 +98,15 @@ fun PocketRemoteApp() {
                 onBulkAdd = { navController.navigate("bulk") },
                 onEdit = { navController.navigate("edit/${it.id}") },
                 onDelete = { repository.delete(it.id) },
+                onFiles = { navController.navigate("files/${it.id}") },
             )
         }
         composable("bulk") {
             BulkAddScreen(onDone = { navController.popBackStack() })
+        }
+        composable("files/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: return@composable
+            FileBrowserScreen(hostId = id, onExit = { navController.popBackStack() })
         }
         composable("edit/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")
@@ -109,6 +115,7 @@ fun PocketRemoteApp() {
             val defaults by repository.defaultCredentials.collectAsStateWithLifecycle()
             AddEditHostScreen(
                 existing = existing,
+                existingHosts = hosts,
                 defaults = defaults,
                 onSave = { profile ->
                     repository.upsert(profile)

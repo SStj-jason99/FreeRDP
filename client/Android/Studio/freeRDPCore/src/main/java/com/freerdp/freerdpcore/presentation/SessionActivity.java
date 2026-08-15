@@ -256,18 +256,28 @@ public class SessionActivity extends AppCompatActivity
 			{
 				if (inputManager != null)
 					inputManager.toggleTouchPointer();
+				refreshToolbarToggleStates();
 			}
 			@Override public void onToggleSysKeyboard()
 			{
 				if (inputManager != null)
 					inputManager.toggleSystemKeyboard();
+				refreshToolbarToggleStates();
 			}
 			@Override public void onToggleExtKeyboard()
 			{
 				if (inputManager != null)
 					inputManager.toggleExtendedKeyboard();
+				refreshToolbarToggleStates();
+			}
+			@Override public void onToggleMagnifier()
+			{
+				if (inputManager != null)
+					inputManager.toggleMagnifier();
+				refreshToolbarToggleStates();
 			}
 		});
+		refreshToolbarToggleStates();
 
 		KeyboardView keyboardView = findViewById(R.id.extended_keyboard);
 		KeyboardView modifiersKeyboardView = findViewById(R.id.extended_keyboard_header);
@@ -386,6 +396,21 @@ public class SessionActivity extends AppCompatActivity
 		session = null;
 	}
 
+	// Keeps the floating toolbar's toggle-button tints in sync with actual state, so on/off is
+	// visible at a glance instead of only right after tapping. inputManager may still be null
+	// this early (e.g. the initial call right after construction, before the session starts).
+	private void refreshToolbarToggleStates()
+	{
+		if (floatingToolbar == null)
+			return;
+		boolean touchPointer = inputManager != null && inputManager.isTouchPointerVisible();
+		boolean sysKeyboard = inputManager != null && inputManager.isSysKeyboardVisible();
+		boolean extKeyboard = inputManager != null && inputManager.isExtKeyboardVisible();
+		floatingToolbar.refreshToggleStates(touchPointer,
+		                                    ApplicationSettingsActivity.getShowMagnifier(this),
+		                                    sysKeyboard, extKeyboard);
+	}
+
 	@Override public void onConfigurationChanged(Configuration newConfig)
 	{
 		super.onConfigurationChanged(newConfig);
@@ -395,15 +420,30 @@ public class SessionActivity extends AppCompatActivity
 
 		hideSystemBars();
 
-		// screen_width/screen_height will be updated by the next onGlobalLayout callback;
+		// screen_width/screen_height are only current as of the *last* layout pass, which at
+		// this point is still the pre-rotation size -- the permanent OnGlobalLayoutListener
+		// installed in onCreate() won't refresh them to the new orientation's size until the
+		// layout pass rotation itself triggers. A plain scrollView.post() races that: nothing
+		// guarantees the layout pass (and with it, the field update) happens before the posted
+		// runnable runs, so a fast enough rotation can send the server the stale pre-rotation
+		// dimensions, leaving the remote desktop sized for the wrong orientation until the next
+		// resize (surfacing as a shrunk/letterboxed view after rotating back). Wait for one
+		// more real layout pass instead, so screen_width/height are guaranteed fresh: this
+		// listener is registered after (and therefore, per ViewTreeObserver's registration-order
+		// dispatch, always runs after) the one in onCreate() that updates those fields.
 		if (session != null && session.getBookmark() != null &&
 		    session.getBookmark().getActiveScreenSettings().isFitScreen())
 		{
-			scrollView.post(() -> {
-				if (screen_width > 0 && screen_height > 0)
-					LibFreeRDP.sendMonitorLayout(session.getInstance(), screen_width,
-					                             screen_height);
-			});
+			scrollView.getViewTreeObserver().addOnGlobalLayoutListener(
+			    new OnGlobalLayoutListener() {
+				    @Override public void onGlobalLayout()
+				    {
+					    scrollView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+					    if (screen_width > 0 && screen_height > 0)
+						    LibFreeRDP.sendMonitorLayout(session.getInstance(), screen_width,
+						                                 screen_height);
+				    }
+			    });
 		}
 	}
 

@@ -11,11 +11,17 @@
 package com.freerdp.freerdpcore.presentation;
 
 import android.app.Activity;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 
 import com.freerdp.freerdpcore.R;
 
@@ -26,6 +32,7 @@ public class FloatingToolbar
 		void onToggleTouchPointer();
 		void onToggleSysKeyboard();
 		void onToggleExtKeyboard();
+		void onToggleMagnifier();
 	}
 
 	private enum Edge
@@ -43,6 +50,11 @@ public class FloatingToolbar
 	private Edge snappedEdge = Edge.LEFT;
 	private float snappedFraction = 0.4f;
 
+	// Toggle buttons whose tint reflects current on/off state -- see refreshToggleStates().
+	private final ImageButton touchPointerButton, magnifierButton, sysKeyboardButton,
+	    extKeyboardButton;
+	private final ColorStateList activeTint, inactiveTint;
+
 	public void setInsets(int left, int top, int right, int bottom)
 	{
 		insetLeft = left;
@@ -57,6 +69,11 @@ public class FloatingToolbar
 		buttons = activity.findViewById(R.id.floating_toolbar_buttons);
 		View handle = activity.findViewById(R.id.floating_toolbar_handle);
 		setTooltip(handle);
+
+		// Background only, not the buttons/icons -- mutate() so we don't stomp on other views
+		// sharing the same drawable resource.
+		float opacity = ApplicationSettingsActivity.getToolbarOpacity(activity);
+		container.getBackground().mutate().setAlpha(Math.round(opacity * 255f));
 
 		GestureDetector gestureDetector =
 		    new GestureDetector(activity, new GestureDetector.SimpleOnGestureListener() {
@@ -73,9 +90,17 @@ public class FloatingToolbar
 		for (int i = 0; i < buttons.getChildCount(); i++)
 			buttons.getChildAt(i).setOnTouchListener(dragListener);
 
-		bindButton(activity, R.id.floating_toolbar_touch_pointer, listener::onToggleTouchPointer);
-		bindButton(activity, R.id.floating_toolbar_sys_keyboard, listener::onToggleSysKeyboard);
-		bindButton(activity, R.id.floating_toolbar_ext_keyboard, listener::onToggleExtKeyboard);
+		touchPointerButton = bindButton(activity, R.id.floating_toolbar_touch_pointer,
+		                                listener::onToggleTouchPointer);
+		magnifierButton =
+		    bindButton(activity, R.id.floating_toolbar_magnifier, listener::onToggleMagnifier);
+		sysKeyboardButton =
+		    bindButton(activity, R.id.floating_toolbar_sys_keyboard, listener::onToggleSysKeyboard);
+		extKeyboardButton =
+		    bindButton(activity, R.id.floating_toolbar_ext_keyboard, listener::onToggleExtKeyboard);
+
+		activeTint = ColorStateList.valueOf(ContextCompat.getColor(activity, R.color.tp_accent));
+		inactiveTint = ColorStateList.valueOf(Color.WHITE);
 
 		ViewTreeObserver vto = container.getViewTreeObserver();
 		vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -156,14 +181,33 @@ public class FloatingToolbar
 		snap();
 	}
 
-	private void bindButton(Activity activity, int id, Runnable action)
+	private ImageButton bindButton(Activity activity, int id, Runnable action)
 	{
-		View v = activity.findViewById(id);
+		ImageButton v = activity.findViewById(id);
 		if (v != null)
 		{
 			setTooltip(v);
 			v.setOnClickListener(ignored -> action.run());
 		}
+		return v;
+	}
+
+	// Tints each toggle button to reflect whether the feature it controls is currently on,
+	// so on/off state is visible at a glance instead of only right after tapping. Call after
+	// any action that might have changed one of these (see SessionActivity's Listener impl).
+	public void refreshToggleStates(boolean touchPointer, boolean magnifier, boolean sysKeyboard,
+	                                boolean extKeyboard)
+	{
+		setActive(touchPointerButton, touchPointer);
+		setActive(magnifierButton, magnifier);
+		setActive(sysKeyboardButton, sysKeyboard);
+		setActive(extKeyboardButton, extKeyboard);
+	}
+
+	private void setActive(ImageButton button, boolean active)
+	{
+		if (button != null)
+			ImageViewCompat.setImageTintList(button, active ? activeTint : inactiveTint);
 	}
 
 	private static void setTooltip(View v)

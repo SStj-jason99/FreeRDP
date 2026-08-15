@@ -39,7 +39,16 @@ public class TouchPointerView extends FrameLayout
 	private static final float SCROLL_DELTA = 10.0f;
 	private static final int LONG_PRESS_MS = 500;
 
-	private View cluster;
+	private Context context;
+	// Puck drag is amplified by this factor so a full-screen cursor move doesn't require a
+	// physical finger drag longer than the screen itself -- without this, reaching the far
+	// edge means lifting and re-dragging several times (finger runs out of room on-screen
+	// before the cursor does), same as any trackpad without pointer acceleration. Configurable
+	// via settings (see refreshFromSettings()); this default only matters before that first
+	// runs.
+	private float dragGain = 1.4f;
+
+	private ViewGroup cluster;
 	private ImageView cursor;
 	private ImageButton scrollButton;
 
@@ -49,8 +58,18 @@ public class TouchPointerView extends FrameLayout
 	private int touchSlop;
 	private boolean placed = false;
 
+	// The click/move hotspot -- decoupled from the cluster's own on-screen position (see
+	// setPositions()) so it can reach every pixel from 0 to the overlay's edge, even though
+	// the cluster itself (which carries the drag puck and all the other buttons) is kept
+	// fully on-screen so it's never unreachable.
+	private float hotspotX, hotspotY;
+	// The cursor glyph's base translation that aligns its hotspot pixel with the cluster's
+	// own origin (set in setRemoteCursor()); setPositions() adds the extra offset needed to
+	// visually pull the glyph the rest of the way out to the true hotspot position.
+	private float cursorBaseTx, cursorBaseTy;
+
 	// puck drag state
-	private float downRawX, downRawY, startTransX, startTransY;
+	private float downRawX, downRawY, startHotspotX, startHotspotY;
 	private boolean dragging = false;
 	private boolean holdDragging = false;
 
@@ -89,6 +108,7 @@ public class TouchPointerView extends FrameLayout
 
 	private void initTouchPointer(Context context)
 	{
+		this.context = context;
 		density = getResources().getDisplayMetrics().density;
 		touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 		cursorTint = ContextCompat.getColor(context, R.color.tp_icon);
@@ -126,6 +146,25 @@ public class TouchPointerView extends FrameLayout
 			if (listener != null)
 				listener.onTouchPointerToggleExtKeyboard();
 		});
+
+		refreshFromSettings();
+	}
+
+	// Re-reads the opacity/sensitivity settings and re-applies them; call whenever the pad is
+	// about to become visible so a change made in Settings shows up without needing to
+	// recreate the session (see SessionInputManager.toggleTouchPointer()).
+	public void refreshFromSettings()
+	{
+		dragGain = ApplicationSettingsActivity.getTouchPointerSensitivity(context);
+
+		float opacity = ApplicationSettingsActivity.getTouchPointerOpacity(context);
+		for (int i = 0; i < cluster.getChildCount(); i++)
+		{
+			View child = cluster.getChildAt(i);
+			if (child != cursor) // the cursor glyph itself stays fully opaque -- it's the
+				                 // actual pointer position, not part of "the pad"
+				child.setAlpha(opacity);
+		}
 	}
 
 	public void setTouchPointerListener(TouchPointerListener listener)
@@ -152,10 +191,10 @@ public class TouchPointerView extends FrameLayout
 		return new float[] { cluster.getX(), cluster.getY() };
 	}
 
-	// click hotspot == cursor tip == cluster top-left corner, in overlay coords
+	// click hotspot == cursor tip position, in overlay coords (see setPositions())
 	private int[] hotspot()
 	{
-		return new int[] { (int)cluster.getX(), (int)cluster.getY() };
+		return new int[] { (int)hotspotX, (int)hotspotY };
 	}
 
 	private void sendLeft(boolean down)
@@ -172,26 +211,32 @@ public class TouchPointerView extends FrameLayout
 			listener.onTouchPointerMove(h[0], h[1]);
 	}
 
-	private void setClusterTranslation(float tx, float ty)
+	// desiredX/Y: where the user wants the hotspot -- may reach every pixel from 0 to the
+	// overlay's edge (clamped only to that). The cluster itself (drag puck, close button,
+	// etc.) is clamped more tightly, to (edge - cluster size), so it always stays fully
+	// on-screen and reachable even when the hotspot is pinned to an edge the cluster box
+	// can't fully occupy. The cursor glyph is then pulled the rest of the way out to the
+	// true hotspot position, visually detaching from the cluster body if needed -- see
+	// setRemoteCursor() for cursorBaseTx/Ty.
+	private void setPositions(float desiredX, float desiredY)
 	{
-		// The click hotspot is the cluster's top-left corner (see hotspot()), so it must be
-		// able to reach every pixel from 0 to the overlay's edge, not just up to
-		// (edge - cluster size). Clamping to the full width/height here means the puck's
-		// auxiliary buttons can slide partly off-screen when the pointer is parked in a
-		// corner, but the cursor itself can still be placed on -- and click -- any pixel,
-		// including the far right/bottom edge.
-		float maxX = getWidth();
-		float maxY = getHeight();
-		if (tx < 0)
-			tx = 0;
-		if (ty < 0)
-			ty = 0;
-		if (maxX > 0 && tx > maxX)
-			tx = maxX;
-		if (maxY > 0 && ty > maxY)
-			ty = maxY;
-		cluster.setTranslationX(tx);
-		cluster.setTranslationY(ty);
+		float overlayW = getWidth();
+		float overlayH = getHeight();
+		hotspotX = clamp(desiredX, 0, overlayW);
+		hotspotY = clamp(desiredY, 0, overlayH);
+
+		float clusterX = clamp(desiredX, 0, Math.max(0, overlayW - cluster.getWidth()));
+		float clusterY = clamp(desiredY, 0, Math.max(0, overlayH - cluster.getHeight()));
+		cluster.setTranslationX(clusterX);
+		cluster.setTranslationY(clusterY);
+
+		cursor.setTranslationX(cursorBaseTx + (hotspotX - clusterX));
+		cursor.setTranslationY(cursorBaseTy + (hotspotY - clusterY));
+	}
+
+	private static float clamp(float v, float lo, float hi)
+	{
+		return v < lo ? lo : (v > hi ? hi : v);
 	}
 
 	@Override protected void onLayout(boolean changed, int l, int t, int r, int b)
@@ -200,12 +245,12 @@ public class TouchPointerView extends FrameLayout
 		if (!placed && getWidth() > 0 && cluster.getWidth() > 0)
 		{
 			placed = true;
-			setClusterTranslation((getWidth() - cluster.getWidth()) / 2.0f,
-			                      (getHeight() - cluster.getHeight()) / 2.0f);
+			setPositions((getWidth() - cluster.getWidth()) / 2.0f,
+			            (getHeight() - cluster.getHeight()) / 2.0f);
 		}
 		else
 		{
-			setClusterTranslation(cluster.getTranslationX(), cluster.getTranslationY());
+			setPositions(hotspotX, hotspotY);
 		}
 	}
 
@@ -216,8 +261,8 @@ public class TouchPointerView extends FrameLayout
 			case MotionEvent.ACTION_DOWN:
 				downRawX = e.getRawX();
 				downRawY = e.getRawY();
-				startTransX = cluster.getTranslationX();
-				startTransY = cluster.getTranslationY();
+				startHotspotX = hotspotX;
+				startHotspotY = hotspotY;
 				dragging = false;
 				holdDragging = false;
 				uiHandler.postDelayed(longPress, LONG_PRESS_MS);
@@ -234,7 +279,7 @@ public class TouchPointerView extends FrameLayout
 				}
 				if (dragging || holdDragging)
 				{
-					setClusterTranslation(startTransX + dx, startTransY + dy);
+					setPositions(startHotspotX + dx * dragGain, startHotspotY + dy * dragGain);
 					sendMove();
 				}
 				return true;
@@ -338,27 +383,33 @@ public class TouchPointerView extends FrameLayout
 			lp.width = s;
 			lp.height = s;
 			cursor.setLayoutParams(lp);
-			cursor.setTranslationX(0);
-			cursor.setTranslationY(0);
-			return;
+			cursorBaseTx = 0;
+			cursorBaseTy = 0;
 		}
-		Bitmap bmp = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
-		float scale = 40 * density / height;
-		if (scale < 1.2f)
-			scale = 1.2f;
-		if (scale > 3.0f)
-			scale = 3.0f;
-		ImageViewCompat.setImageTintList(cursor, null);
-		// filterBitmap=false -> nearest-neighbour scaling keeps the small cursor crisp
-		BitmapDrawable bd = new BitmapDrawable(getResources(), bmp);
-		bd.setFilterBitmap(false);
-		cursor.setImageDrawable(bd);
-		lp.width = Math.round(width * scale);
-		lp.height = Math.round(height * scale);
-		cursor.setLayoutParams(lp);
-		// place the bitmap hotspot pixel on the cluster's top-left corner (0,0)
-		cursor.setTranslationX(-hotX * scale);
-		cursor.setTranslationY(-hotY * scale);
+		else
+		{
+			Bitmap bmp = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888);
+			float scale = 40 * density / height;
+			if (scale < 1.2f)
+				scale = 1.2f;
+			if (scale > 3.0f)
+				scale = 3.0f;
+			ImageViewCompat.setImageTintList(cursor, null);
+			// filterBitmap=false -> nearest-neighbour scaling keeps the small cursor crisp
+			BitmapDrawable bd = new BitmapDrawable(getResources(), bmp);
+			bd.setFilterBitmap(false);
+			cursor.setImageDrawable(bd);
+			lp.width = Math.round(width * scale);
+			lp.height = Math.round(height * scale);
+			cursor.setLayoutParams(lp);
+			// base offset aligns the bitmap's hotspot pixel with the cluster's own origin;
+			// setPositions() layers the extra offset that pulls it out to the true hotspot
+			cursorBaseTx = -hotX * scale;
+			cursorBaseTy = -hotY * scale;
+		}
+		// Re-apply so the cursor glyph's on-screen translation reflects the new base offset
+		// immediately, without waiting for the next drag/layout to call setPositions().
+		setPositions(hotspotX, hotspotY);
 	}
 
 	// touch pointer listener - triggered when an action field is hit

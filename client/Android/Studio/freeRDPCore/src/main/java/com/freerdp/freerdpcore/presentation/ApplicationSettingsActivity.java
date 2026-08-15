@@ -318,7 +318,48 @@ public class ApplicationSettingsActivity
 	{
 		SharedPreferences preferences = get(context);
 		return preferences.getBoolean(context.getString(R.string.preference_key_ui_show_magnifier),
-		                              true);
+		                              false);
+	}
+
+	// Lets in-session controls (e.g. the floating toolbar) flip this without going through the
+	// settings screen; keeps the CheckBoxPreference there in sync since both read/write the
+	// same backing pref.
+	public static void setShowMagnifier(Context context, boolean show)
+	{
+		get(context)
+		    .edit()
+		    .putBoolean(context.getString(R.string.preference_key_ui_show_magnifier), show)
+		    .apply();
+	}
+
+	// Touch-pointer pad opacity, as a 0..1 alpha (settings screen shows/stores it as a 20-100
+	// percent SeekBarPreference).
+	public static float getTouchPointerOpacity(Context context)
+	{
+		SharedPreferences preferences = get(context);
+		int percent = preferences.getInt(
+		    context.getString(R.string.preference_key_ui_touchpointer_opacity), 70);
+		return percent / 100f;
+	}
+
+	// Touch-pointer drag gain, as a multiplier >= 1.0 (settings screen shows/stores it as a
+	// 100-300 percent SeekBarPreference; see TouchPointerView's DRAG_GAIN).
+	public static float getTouchPointerSensitivity(Context context)
+	{
+		SharedPreferences preferences = get(context);
+		int percent = preferences.getInt(
+		    context.getString(R.string.preference_key_ui_touchpointer_sensitivity), 140);
+		return percent / 100f;
+	}
+
+	// Floating toolbar background opacity, as a 0..1 alpha (settings screen shows/stores it as
+	// a 20-100 percent SeekBarPreference).
+	public static float getToolbarOpacity(Context context)
+	{
+		SharedPreferences preferences = get(context);
+		int percent =
+		    preferences.getInt(context.getString(R.string.preference_key_ui_toolbar_opacity), 80);
+		return percent / 100f;
 	}
 
 	public static String getClientName(Context context)

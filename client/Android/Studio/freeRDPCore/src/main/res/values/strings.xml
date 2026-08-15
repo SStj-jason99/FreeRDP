@@ -23,6 +23,7 @@
     <string name="menu_sys_keyboard">Keyboard</string>
     <string name="menu_ext_keyboard">Function Keys</string>
     <string name="menu_touch_pointer">Touch Pointer</string>
+    <string name="menu_magnifier">Magnifier</string>
     <string name="menu_modifiers_toggle">Modifier Keys</string>
     <!-- List section headers -->
     <!-- Search strings -->
@@ -220,6 +221,9 @@
     <string name="settings_ui_invert_scrolling">Invert Scrolling</string>
     <string name="settings_ui_auto_scroll_touchpointer">Touch Pointer Auto Scroll</string>
     <string name="settings_ui_show_magnifier">Show Magnifier While Dragging</string>
+    <string name="settings_ui_touchpointer_opacity">Touch Pointer Pad Opacity</string>
+    <string name="settings_ui_touchpointer_sensitivity">Touch Pointer Drag Sensitivity</string>
+    <string name="settings_ui_toolbar_opacity">Floating Toolbar Opacity</string>
     <string name="settings_ui_ask_on_exit">Show Dialog on Exit</string>
     <string name="settings_ui_use_back_as_altf4">Use \"back\" button as Alt+F4</string>
     <string name="settings_cat_power">Power Saving</string>
@@ -283,6 +287,9 @@
     <string name="preference_key_ui_ask_on_exit" translatable="false">ui.ask_on_exit</string>
     <string name="preference_key_ui_auto_scroll_touchpointer" translatable="false">ui.auto_scroll_touchpointer</string>
     <string name="preference_key_ui_show_magnifier" translatable="false">ui.show_magnifier</string>
+    <string name="preference_key_ui_touchpointer_opacity" translatable="false">ui.touchpointer_opacity</string>
+    <string name="preference_key_ui_touchpointer_sensitivity" translatable="false">ui.touchpointer_sensitivity</string>
+    <string name="preference_key_ui_toolbar_opacity" translatable="false">ui.toolbar_opacity</string>
     <string name="preference_key_ui_invert_scrolling" translatable="false">ui.invert_scrolling</string>
     <string name="preference_key_ui_swap_mouse_buttons" translatable="false">ui.swap_mouse_buttons</string>
     <string name="preference_key_ui_use_back_as_altf4" translatable="false">ui.use_back_as_altf4</string>

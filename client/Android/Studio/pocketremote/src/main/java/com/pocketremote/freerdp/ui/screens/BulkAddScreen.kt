@@ -1,5 +1,7 @@
 package com.pocketremote.freerdp.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,15 +28,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.pocketremote.freerdp.R
 import com.pocketremote.freerdp.data.DefaultCredentials
 import com.pocketremote.freerdp.data.HostProfile
 import com.pocketremote.freerdp.data.HostRepository
 
 /** 호기 번호 -> AMR IP (1호기=172.17.132.11, 2호기=.12, ...) */
 private fun amrAddressForHo(hoNumber: Int): String = "172.17.132.${10 + hoNumber}"
+
+// 중복 판정은 host(SSH 접속 주소)만 기준으로 한다. AMR 경유 접속의 rdpTargetHost는 실사용
+// 환경에서 다 같은 값을 쓰는 경우가 많아 구분 기준으로 의미가 없다 - host가 실제로 매
+// 호기마다 달라지는 값이라 이게 진짜 유일 식별자다.
+private fun effectiveTarget(p: HostProfile): String = p.host.trim().lowercase()
+
+private fun registerAndFinish(
+    repository: HostRepository,
+    toAdd: List<HostProfile>,
+    skipped: List<HostProfile>,
+    sshUsername: String,
+    sshPassword: String,
+    useJumpHost: Boolean,
+    rdpTargetHost: String,
+    rdpUsername: String,
+    rdpPassword: String,
+    context: Context,
+    onDone: () -> Unit,
+) {
+    toAdd.forEach { repository.upsert(it) }
+    repository.saveDefaultCredentials(
+        DefaultCredentials(
+            sshUsername = sshUsername,
+            sshPassword = sshPassword,
+            useJumpHost = useJumpHost,
+            rdpTargetHost = rdpTargetHost,
+            rdpUsername = rdpUsername,
+            rdpPassword = rdpPassword,
+        )
+    )
+    // resultMessage를 화면에 Text로 띄워봤자 onDone()이 바로 뒤로가기를 해버려서 보일 새가
+    // 없었다(기존 버그) - Toast로 바꿔서 화면이 전환돼도 확실히 보이게 한다.
+    val message = if (skipped.isEmpty()) context.getString(R.string.bulkadd_toast_done, toAdd.size)
+                  else context.getString(R.string.bulkadd_toast_done_with_skip, toAdd.size, skipped.size)
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    onDone()
+}
 
 /**
  * 호기 번호 범위만 입력하면 등록되는 일괄등록 화면. AMR 주소는 호기 번호로 자동 계산되고,
@@ -64,6 +106,13 @@ fun BulkAddScreen(onDone: () -> Unit) {
     var showAdvanced by remember { mutableStateOf(false) }
     var previewText by remember { mutableStateOf("") }
     var resultMessage by remember { mutableStateOf<String?>(null) }
+    // 중복(이미 등록된 접속 대상)이 섞여 있을 때, 등록 전에 확인 다이얼로그로 안내하기 위한
+    // 대기 상태. toAdd/skipped 둘 다 들고 있는다.
+    var pendingRegistration by remember { mutableStateOf<Pair<List<HostProfile>, List<HostProfile>>?>(null) }
+
+    // 아래 두 곳(비-Composable 컨텍스트: 일반 함수·onClick 람다)에서 재사용해야 해서
+    // 이 시점(Composable 컨텍스트)에서 미리 값을 읽어둔다.
+    val checkNumbersError = stringResource(R.string.bulkadd_error_check_numbers)
 
     fun buildProfiles(): List<HostProfile>? {
         val start = startNumber.toIntOrNull() ?: return null
@@ -89,14 +138,14 @@ fun BulkAddScreen(onDone: () -> Unit) {
     fun updatePreview() {
         val profiles = buildProfiles()
         previewText = if (profiles == null) {
-            "호기 번호와 대수를 확인해주세요"
+            checkNumbersError
         } else {
             profiles.joinToString("\n") { "${it.displayName}  ->  ${it.host}" }
         }
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("여러 대 한번에 등록") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.bulkadd_title)) }) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -104,12 +153,12 @@ fun BulkAddScreen(onDone: () -> Unit) {
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Text("호기 번호만 입력하면 AMR 주소·계정은 자동으로 채워집니다.")
+            Text(stringResource(R.string.bulkadd_desc))
 
             Spacer(Modifier.padding(top = 16.dp))
             Row {
                 Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
-                    Text("시작 호기 번호")
+                    Text(stringResource(R.string.bulkadd_label_start_number))
                     OutlinedTextField(
                         value = startNumber,
                         onValueChange = { startNumber = it; updatePreview() },
@@ -118,7 +167,7 @@ fun BulkAddScreen(onDone: () -> Unit) {
                     )
                 }
                 Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
-                    Text("몇 대")
+                    Text(stringResource(R.string.bulkadd_label_count))
                     OutlinedTextField(
                         value = count,
                         onValueChange = { count = it; updatePreview() },
@@ -130,11 +179,11 @@ fun BulkAddScreen(onDone: () -> Unit) {
 
             Spacer(Modifier.padding(top = 12.dp))
             TextButton(onClick = { showAdvanced = !showAdvanced }) {
-                Text(if (showAdvanced) "상세 설정 숨기기" else "상세 설정")
+                Text(if (showAdvanced) stringResource(R.string.bulkadd_toggle_hide_advanced) else stringResource(R.string.bulkadd_toggle_show_advanced))
             }
 
             if (showAdvanced) {
-                Text("표시 이름 패턴 ({n} 자리에 호기 번호가 들어감)")
+                Text(stringResource(R.string.bulkadd_label_name_pattern))
                 OutlinedTextField(
                     value = namePattern,
                     onValueChange = { namePattern = it; updatePreview() },
@@ -143,28 +192,28 @@ fun BulkAddScreen(onDone: () -> Unit) {
                 )
 
                 Spacer(Modifier.padding(top = 16.dp))
-                Text("공통 SSH 계정 (AMR 경유 시에는 AMR 로그인 정보)", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.bulkadd_section_ssh), style = MaterialTheme.typography.titleSmall)
                 Row {
                     Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
-                        Text("SSH 포트")
+                        Text(stringResource(R.string.bulkadd_label_ssh_port))
                         OutlinedTextField(value = sshPort, onValueChange = { sshPort = it }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                     }
                     Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
-                        Text("RDP 포트")
+                        Text(stringResource(R.string.bulkadd_label_rdp_port))
                         OutlinedTextField(value = rdpPort, onValueChange = { rdpPort = it }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                     }
                 }
                 OutlinedTextField(
                     value = sshUsername,
                     onValueChange = { sshUsername = it },
-                    label = { Text("사용자 이름") },
+                    label = { Text(stringResource(R.string.common_label_username)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = sshPassword,
                     onValueChange = { sshPassword = it },
-                    label = { Text("비밀번호") },
+                    label = { Text(stringResource(R.string.common_label_password)) },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     singleLine = true,
@@ -173,28 +222,28 @@ fun BulkAddScreen(onDone: () -> Unit) {
                 Spacer(Modifier.padding(top = 16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = useJumpHost, onCheckedChange = { checked -> useJumpHost = checked; updatePreview() })
-                    Text("AMR 경유 접속")
+                    Text(stringResource(R.string.addedit_label_use_jump_host))
                 }
                 if (useJumpHost) {
-                    Text("비전 PC(RDP 대상) IP")
+                    Text(stringResource(R.string.bulkadd_label_rdp_target_host))
                     OutlinedTextField(
                         value = rdpTargetHost,
                         onValueChange = { rdpTargetHost = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
-                    Text("비전 PC 계정", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                    Text(stringResource(R.string.bulkadd_section_rdp_account), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
                     OutlinedTextField(
                         value = rdpUsername,
                         onValueChange = { rdpUsername = it },
-                        label = { Text("사용자 이름") },
+                        label = { Text(stringResource(R.string.common_label_username)) },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         singleLine = true,
                     )
                     OutlinedTextField(
                         value = rdpPassword,
                         onValueChange = { rdpPassword = it },
-                        label = { Text("비밀번호") },
+                        label = { Text(stringResource(R.string.common_label_password)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         singleLine = true,
@@ -203,13 +252,13 @@ fun BulkAddScreen(onDone: () -> Unit) {
 
                 Row(modifier = Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = blackenWallpaper, onCheckedChange = { blackenWallpaper = it }, enabled = !useJumpHost)
-                    Text("접속 시 배경화면 검정으로 전환 (AMR 경유 시에는 적용 안 됨)")
+                    Text(stringResource(R.string.bulkadd_label_blacken))
                 }
             }
 
             Spacer(Modifier.padding(top = 16.dp))
             Button(onClick = { updatePreview() }, modifier = Modifier.fillMaxWidth()) {
-                Text("미리보기")
+                Text(stringResource(R.string.bulkadd_button_preview))
             }
 
             if (previewText.isNotBlank()) {
@@ -221,30 +270,49 @@ fun BulkAddScreen(onDone: () -> Unit) {
                 onClick = {
                     val profiles = buildProfiles()
                     if (profiles == null) {
-                        resultMessage = "호기 번호와 대수를 확인해주세요"
+                        resultMessage = checkNumbersError
                     } else {
-                        profiles.forEach { repository.upsert(it) }
-                        repository.saveDefaultCredentials(
-                            DefaultCredentials(
-                                sshUsername = sshUsername,
-                                sshPassword = sshPassword,
-                                useJumpHost = useJumpHost,
-                                rdpTargetHost = rdpTargetHost,
-                                rdpUsername = rdpUsername,
-                                rdpPassword = rdpPassword,
-                            )
-                        )
-                        resultMessage = "${profiles.size}개 등록 완료"
-                        onDone()
+                        // upsert()는 id로만 중복을 판단하는데, 여기서 만드는 프로필은 매번
+                        // 새 랜덤 id를 받으므로 같은 범위로 두 번 누르면 무조건 다 새로
+                        // 추가돼버렸다(진짜 중복 등록 버그). 이미 등록된 host는 걸러낸다.
+                        val existingTargets = repository.hosts.value.map(::effectiveTarget).toSet()
+                        val (toAdd, skipped) = profiles.partition { effectiveTarget(it) !in existingTargets }
+                        if (skipped.isEmpty()) {
+                            registerAndFinish(repository, toAdd, skipped, sshUsername, sshPassword,
+                                useJumpHost, rdpTargetHost, rdpUsername, rdpPassword, context, onDone)
+                        } else {
+                            // 바로 등록하지 않고, 몇 개가 왜 제외되는지 먼저 확인시킨다.
+                            pendingRegistration = toAdd to skipped
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = sshUsername.isNotBlank() && (!useJumpHost || (rdpTargetHost.isNotBlank() && rdpUsername.isNotBlank())),
             ) {
-                Text("전부 등록하기")
+                Text(stringResource(R.string.bulkadd_button_register_all))
             }
 
             resultMessage?.let { Text(it, modifier = Modifier.padding(top = 8.dp)) }
         }
+    }
+
+    pendingRegistration?.let { (toAdd, skipped) ->
+        AlertDialog(
+            onDismissRequest = { pendingRegistration = null },
+            title = { Text(stringResource(R.string.bulkadd_dialog_title_duplicates)) },
+            text = {
+                Text(stringResource(R.string.bulkadd_dialog_msg_duplicates, toAdd.size + skipped.size, skipped.size, toAdd.size))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingRegistration = null
+                    registerAndFinish(repository, toAdd, skipped, sshUsername, sshPassword,
+                        useJumpHost, rdpTargetHost, rdpUsername, rdpPassword, context, onDone)
+                }) { Text(stringResource(R.string.bulkadd_dialog_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRegistration = null }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
     }
 }

@@ -102,4 +102,7 @@ class SshTunnelManager {
         session = null
         originalWallpaperPath = null
     }
+
+    /** SFTP 등 다른 기능에서 같은 SSH 세션을 재사용할 수 있게 노출 */
+    fun currentSession(): Session? = session
 }
